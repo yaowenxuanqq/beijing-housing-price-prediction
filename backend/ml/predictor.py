@@ -60,6 +60,10 @@ class HousingPredictor:
 
     def predict(self, payload: dict) -> dict:
         district = payload["district_name"]
+        # 双保险：即使绕过 serializer 直接调用，也拒绝未知区域
+        # （OrdinalEncoder 的 unknown_value=-1 会与"东城区=0"落在同一分支，导致静默误判）
+        if district not in DISTRICT_CENTROIDS:
+            raise ValueError(f"未知区域：{district}")
         lng = payload.get("lng")
         lat = payload.get("lat")
         if lng is None or lat is None:
@@ -85,11 +89,12 @@ class HousingPredictor:
         raw_ratio = float(self.pipe.predict(X)[0])
         ratio = float(np.clip(raw_ratio, RATIO_MIN, RATIO_MAX))
         market = float(payload["market_median_unit_price"])
-        unit_price = ratio * market
+        # 先定单价再反算 ratio，保证响应三字段可互推
+        unit_price = round(ratio * market, 0)
         total_price = unit_price * row["square"] / 10000.0
 
         return {
-            "ratio": round(ratio, 4),
+            "ratio": round(unit_price / market, 6),
             "predicted_unit_price": round(unit_price, 0),
             "predicted_total_price": round(total_price, 1),
             "market_median_unit_price": round(market, 0),

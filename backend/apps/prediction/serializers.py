@@ -3,6 +3,18 @@ from rest_framework import serializers
 
 FLOOR_CHOICES = ["低", "中", "高", "顶", "底", "未知"]
 
+# 区名白名单缓存（数据静态，进程内缓存一次）
+_district_cache = None
+
+
+def _valid_districts():
+    global _district_cache
+    if _district_cache is None:
+        from apps.housing.models import House
+        _district_cache = set(
+            House.objects.values_list("district_name", flat=True).distinct())
+    return _district_cache
+
 
 class PredictRequestSerializer(serializers.Serializer):
     district_name = serializers.CharField(max_length=32)
@@ -26,3 +38,10 @@ class PredictRequestSerializer(serializers.Serializer):
     lng = serializers.FloatField(min_value=115, max_value=118, required=False)
     lat = serializers.FloatField(min_value=39, max_value=41, required=False)
     cid = serializers.IntegerField(required=False)
+
+    def validate_district_name(self, value):
+        valid = _valid_districts()
+        if valid and value not in valid:
+            raise serializers.ValidationError(
+                f"未知区域：{value}，可选值为 {sorted(valid)}")
+        return value

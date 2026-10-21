@@ -49,6 +49,9 @@ class DistrictStatsView(APIView):
         return Response(data)
 
 
+_CORR_CACHE = None
+
+
 class CorrelationView(APIView):
     """数值特征相关性（取前 2 万行样本计算）"""
 
@@ -56,17 +59,25 @@ class CorrelationView(APIView):
               "total_floors", "house_age", "construction_year", "ladder_ratio",
               "community_average", "lng", "lat"]
 
+    LEAKAGE_FIELDS = ["unit_price", "total_price", "community_average"]
+
     def get(self, request):
-        qs = House.objects.values(*self.FIELDS)[:20000]
-        df = pd.DataFrame(list(qs))
-        if df.empty:
-            return Response({"fields": [], "matrix": []})
-        corr = df.corr(numeric_only=True).round(4).fillna(0)
-        return Response({
-            "fields": list(corr.columns),
-            "matrix": corr.values.tolist(),
-            "sample_size": int(len(df)),
-        })
+        global _CORR_CACHE
+        if _CORR_CACHE is None:
+            # 随机取样：避免按物理顺序取前 N 行导致的时间偏倚
+            qs = House.objects.order_by("?").values(*self.FIELDS)[:20000]
+            df = pd.DataFrame(list(qs))
+            if df.empty:
+                return Response({"fields": [], "matrix": [], "sample_size": 0,
+                                 "leakage_fields": self.LEAKAGE_FIELDS})
+            corr = df.corr(numeric_only=True).round(4).fillna(0)
+            _CORR_CACHE = {
+                "fields": list(corr.columns),
+                "matrix": corr.values.tolist(),
+                "sample_size": int(len(df)),
+                "leakage_fields": self.LEAKAGE_FIELDS,
+            }
+        return Response(_CORR_CACHE)
 
 
 class ImportanceView(APIView):
