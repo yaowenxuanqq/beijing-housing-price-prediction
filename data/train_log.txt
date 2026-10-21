@@ -1,0 +1,74 @@
+C:\姚文轩\毕业设计\.venv\Lib\site-packages\sklearn\neural_network\_multilayer_perceptron.py:785: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (60) reached and the optimization hasn't converged yet.
+  warnings.warn(
+C:\姚文轩\毕业设计\.venv\Lib\site-packages\sklearn\neural_network\_multilayer_perceptron.py:785: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (60) reached and the optimization hasn't converged yet.
+  warnings.warn(
+C:\姚文轩\毕业设计\.venv\Lib\site-packages\sklearn\neural_network\_multilayer_perceptron.py:785: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (60) reached and the optimization hasn't converged yet.
+  warnings.warn(
+C:\姚文轩\毕业设计\.venv\Lib\site-packages\sklearn\neural_network\_multilayer_perceptron.py:785: ConvergenceWarning: Stochastic Optimizer: Maximum iterations (60) reached and the optimization hasn't converged yet.
+  warnings.warn(
+==================================================================
+03_train.py —— 三层评估实验（基线参数）
+==================================================================
+数据: 317,718 行；特征 9 数值 + 8 类别
+
+==================================================================
+实验 ES1_random_logtotal  |  划分=random  目标=log_total
+==================================================================
+训练 254,174 行 / 测试 63,544 行
+  [baseline] R2=0.5249  MAE=105.059  0.1s
+  [linear  ] R2=0.4562  MAE=95.537  MAPE=28.16%  MAE_unit=11674  2.0s
+  [tree    ] R2=0.6630  MAE=85.819  MAPE=25.29%  MAE_unit=10689  1.8s
+  [rf      ] R2=0.7294  MAE=75.790  MAPE=22.06%  MAE_unit=9464  8.5s
+  [xgboost ] R2=0.7359  MAE=76.667  MAPE=22.60%  MAE_unit=9612  2.2s
+  [mlp     ] R2=0.6906  MAE=82.276  MAPE=24.02%  MAE_unit=10284  56.2s
+  -> 最优: xgboost
+
+==================================================================
+实验 ES2_time_logtotal  |  划分=time  目标=log_total
+==================================================================
+训练 229,583 行 / 测试 88,135 行
+  [baseline] R2=0.0453  MAE=208.874  0.1s
+  [linear  ] R2=0.0960  MAE=199.523  MAPE=38.24%  MAE_unit=25075  1.8s
+  [tree    ] R2=0.2388  MAE=187.925  MAPE=36.81%  MAE_unit=23921  1.6s
+  [rf      ] R2=0.2520  MAE=187.239  MAPE=36.53%  MAE_unit=23807  6.6s
+  [xgboost ] R2=0.2732  MAE=186.499  MAPE=36.66%  MAE_unit=23822  1.7s
+  [mlp     ] R2=0.2597  MAE=188.043  MAPE=36.99%  MAE_unit=24263  52.0s
+  -> 最优: xgboost
+
+==================================================================
+实验 ES3_time_ratio  |  划分=time  目标=ratio
+==================================================================
+训练 229,583 行 / 测试 88,135 行
+  [baseline] R2=0.6327  MAE=10983.500  0.0s
+  [linear  ] R2=0.6927  MAE=9890.379  MAPE=17.25%  1.9s
+  [tree    ] R2=0.7671  MAE=8292.518  MAPE=14.37%  1.3s
+  [rf      ] R2=0.8523  MAE=6715.101  MAPE=11.82%  6.7s
+  [xgboost ] R2=0.8177  MAE=7498.959  MAPE=12.94%  1.9s
+  [mlp     ] R2=0.7159  MAE=8491.468  MAPE=14.57%  56.4s
+  -> 最优: rf
+
+==================================================================
+实验 ES4_random_ratio  |  划分=random  目标=ratio
+==================================================================
+训练 254,174 行 / 测试 63,544 行
+  [baseline] R2=0.7152  MAE=8262.822  0.0s
+  [linear  ] R2=0.7636  MAE=7440.292  MAPE=17.46%  1.9s
+  [tree    ] R2=0.8308  MAE=6067.948  MAPE=14.10%  1.8s
+  [rf      ] R2=0.8904  MAE=4815.736  MAPE=11.19%  9.0s
+  [xgboost ] R2=0.8643  MAE=5482.761  MAPE=12.70%  2.1s
+  [mlp     ] R2=0.7793  MAE=6200.002  MAPE=14.33%  62.6s
+  -> 最优: rf
+
+==================================================================
+汇总（R² / MAE）
+==================================================================
+模型        ES1_random_logtotal     ES2_time_logtotal       ES3_time_ratio          ES4_random_ratio        
+baseline  0.5249 / 105.06      0.0453 / 208.87      0.6327 / 10983.50    0.7152 / 8262.82     
+linear    0.4562 / 95.54       0.0960 / 199.52      0.6927 / 9890.38     0.7636 / 7440.29     
+tree      0.6630 / 85.82       0.2388 / 187.93      0.7671 / 8292.52     0.8308 / 6067.95     
+rf        0.7294 / 75.79       0.2520 / 187.24      0.8523 / 6715.10     0.8904 / 4815.74     
+xgboost   0.7359 / 76.67       0.2732 / 186.50      0.8177 / 7498.96     0.8643 / 5482.76     
+mlp       0.6906 / 82.28       0.2597 / 188.04      0.7159 / 8491.47     0.7793 / 6200.00     
+
+输出: metrics_v1.json / feature_columns_v1.json / models/*.joblib
+==================================================================

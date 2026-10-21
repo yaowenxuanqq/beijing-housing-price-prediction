@@ -1,0 +1,37 @@
+{
+  "model": "RandomForestRegressor",
+  "target": "ratio",
+  "n_estimators": 100,
+  "params": {
+    "n_estimators": 100,
+    "min_samples_leaf": 5,
+    "max_features": 0.7,
+    "max_depth": 25
+  },
+  "seeds": [
+    42,
+    2024,
+    7
+  ],
+  "runs": [
+    {
+      "seed": 42,
+      "r2_unit": 0.8663823261734648,
+      "mae_unit": 6413.830520335243
+    },
+    {
+      "seed": 2024,
+      "r2_unit": 0.8662243614517309,
+      "mae_unit": 6409.692702197069
+    },
+    {
+      "seed": 7,
+      "r2_unit": 0.8660600731708723,
+      "mae_unit": 6423.312008264759
+    }
+  ],
+  "r2_mean": 0.8662222535986892,
+  "r2_std": 0.00016113684154562616,
+  "mae_mean": 6415.611743599024,
+  "mae_std": 6.9821874565162885
+}

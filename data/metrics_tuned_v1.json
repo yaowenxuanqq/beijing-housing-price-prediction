@@ -1,0 +1,196 @@
+{
+  "generated_at": "2026-10-21 15:28:25",
+  "tuning_target": "ratio",
+  "tune_sample": 50000,
+  "cv": "TimeSeriesSplit(5)",
+  "seed": 42,
+  "tuning": {
+    "tree": {
+      "params": {
+        "model__min_samples_split": 50,
+        "model__min_samples_leaf": 5,
+        "model__max_depth": null
+      },
+      "cv_mae_log": 0.14014768060982274,
+      "tune_seconds": 10.9
+    },
+    "rf": {
+      "params": {
+        "model__n_estimators": 100,
+        "model__min_samples_leaf": 5,
+        "model__max_features": 0.7,
+        "model__max_depth": 25
+      },
+      "cv_mae_log": 0.12290007264570375,
+      "tune_seconds": 78.9,
+      "note": "n_estimators 由搜索的 150 降为 100（指标相同，体积 -46MB）"
+    },
+    "xgboost": {
+      "params": {
+        "model__subsample": 0.9,
+        "model__reg_lambda": 1,
+        "model__n_estimators": 600,
+        "model__max_depth": 8,
+        "model__learning_rate": 0.08,
+        "model__colsample_bytree": 0.7
+      },
+      "cv_mae_log": 0.125659518485817,
+      "tune_seconds": 65.7
+    },
+    "mlp": {
+      "params": {
+        "model__learning_rate_init": 0.01,
+        "model__hidden_layer_sizes": [
+          64
+        ],
+        "model__alpha": 0.01
+      },
+      "cv_mae_log": 0.14771736877368835,
+      "tune_seconds": 144.8
+    }
+  },
+  "experiments": [
+    {
+      "model": "tree",
+      "params": {
+        "model__min_samples_split": 50,
+        "model__min_samples_leaf": 5,
+        "model__max_depth": null
+      },
+      "metrics": {
+        "ES2_time_logtotal": {
+          "rmse": 232.87208957803162,
+          "mae": 183.76694719358144,
+          "r2": 0.271844467072094,
+          "mape_pct": 36.13710196775143,
+          "mae_unit_price": 23376.80847522742,
+          "r2_unit": -0.3120905277846515
+        },
+        "ES3_time_ratio": {
+          "rmse": 10303.36224151505,
+          "mae": 7321.424842299045,
+          "r2": 0.8159461883450758,
+          "mape_pct": 12.64850432477839,
+          "r2_ratio": 0.5162094118763971,
+          "r2_unit": 0.8159461883450758
+        },
+        "ES1_random_logtotal": {
+          "rmse": 126.79533391206097,
+          "mae": 81.39827063655945,
+          "r2": 0.6895818969778882,
+          "mape_pct": 23.935949321665717,
+          "mae_unit_price": 10131.744830843287,
+          "r2_unit": 0.5579991921575831
+        }
+      }
+    },
+    {
+      "model": "rf",
+      "params": {
+        "model__n_estimators": 100,
+        "model__min_samples_leaf": 5,
+        "model__max_features": 0.7,
+        "model__max_depth": 25
+      },
+      "metrics": {
+        "ES2_time_logtotal": {
+          "rmse": 230.34514067503542,
+          "mae": 183.6727988058277,
+          "r2": 0.2875614955190947,
+          "mape_pct": 36.02047565204979,
+          "mae_unit_price": 23385.693202644292,
+          "r2_unit": -0.29104908698562393
+        },
+        "ES3_time_ratio": {
+          "rmse": 8778.867905374003,
+          "mae": 6413.830520335243,
+          "r2": 0.8663823261734648,
+          "mape_pct": 11.27423885457591,
+          "r2_ratio": 0.6382437255814589,
+          "r2_unit": 0.8663823261734648
+        },
+        "ES1_random_logtotal": {
+          "rmse": 113.53548585136596,
+          "mae": 71.88371676197073,
+          "r2": 0.7511121233164181,
+          "mape_pct": 20.87838530593863,
+          "mae_unit_price": 8983.502053718628,
+          "r2_unit": 0.6447269395428921
+        }
+      }
+    },
+    {
+      "model": "xgboost",
+      "params": {
+        "model__subsample": 0.9,
+        "model__reg_lambda": 1,
+        "model__n_estimators": 600,
+        "model__max_depth": 8,
+        "model__learning_rate": 0.08,
+        "model__colsample_bytree": 0.7
+      },
+      "metrics": {
+        "ES2_time_logtotal": {
+          "rmse": 224.13093389894576,
+          "mae": 181.01128681445368,
+          "r2": 0.32548303841286463,
+          "mape_pct": 35.81817814292002,
+          "mae_unit_price": 23158.80781276393,
+          "r2_unit": -0.258235131707504
+        },
+        "ES3_time_ratio": {
+          "rmse": 9196.775670033605,
+          "mae": 6696.555251843767,
+          "r2": 0.8533581048776825,
+          "mape_pct": 11.598612105441951,
+          "r2_ratio": 0.6130279105403968,
+          "r2_unit": 0.8533581048776825
+        },
+        "ES1_random_logtotal": {
+          "rmse": 105.88157466714306,
+          "mae": 68.41433011298965,
+          "r2": 0.7835381927347784,
+          "mape_pct": 20.135202006425057,
+          "mae_unit_price": 8619.167975062333,
+          "r2_unit": 0.6792255873041656
+        }
+      }
+    },
+    {
+      "model": "mlp",
+      "params": {
+        "model__learning_rate_init": 0.01,
+        "model__hidden_layer_sizes": [
+          64
+        ],
+        "model__alpha": 0.01
+      },
+      "metrics": {
+        "ES2_time_logtotal": {
+          "rmse": 240.64638827254043,
+          "mae": 188.4084531079325,
+          "r2": 0.22241482940026547,
+          "mape_pct": 36.387113465546996,
+          "mae_unit_price": 23890.369152069226,
+          "r2_unit": -0.40094794034010284
+        },
+        "ES3_time_ratio": {
+          "rmse": 12450.957957679666,
+          "mae": 9099.300543397534,
+          "r2": 0.73122280854874,
+          "mape_pct": 15.64725462971103,
+          "r2_ratio": 0.3049998563806936,
+          "r2_unit": 0.73122280854874
+        },
+        "ES1_random_logtotal": {
+          "rmse": 135.30198854936515,
+          "mae": 87.24646115370254,
+          "r2": 0.6465330144321698,
+          "mape_pct": 25.90372116782432,
+          "mae_unit_price": 10858.132806882042,
+          "r2_unit": 0.4891510784841253
+        }
+      }
+    }
+  ]
+}

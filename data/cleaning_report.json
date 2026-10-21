@@ -1,0 +1,178 @@
+{
+  "generated_at": "2026-09-30 16:41:47",
+  "source_file": "new.csv",
+  "thresholds": {
+    "date_start": "2011-01-01",
+    "date_end": "2017-12-31",
+    "square_min": 10.0,
+    "square_max": 500.0,
+    "total_price_min": 10.0,
+    "total_price_max": 5000.0,
+    "unit_price_min": 3000.0,
+    "unit_price_max": 150000.0,
+    "bathroom_max": 10,
+    "house_age_min": 0,
+    "house_age_max": 70,
+    "building_type_valid": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "renovation_valid": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "floor_positions": [
+      "低",
+      "中",
+      "高",
+      "顶",
+      "底"
+    ]
+  },
+  "raw_rows": 318851,
+  "clean_rows": 317718,
+  "removed_rows_total": 1133,
+  "removed_ratio": 0.36,
+  "steps": [
+    {
+      "step": "时间过滤 2011-01-01 ~ 2017-12-31",
+      "before": 318851,
+      "after": 318435,
+      "removed": 416,
+      "note": ""
+    },
+    {
+      "step": "面积阈值过滤 [10.0, 500.0]",
+      "before": 318435,
+      "after": 318395,
+      "removed": 40,
+      "note": ""
+    },
+    {
+      "step": "总价阈值过滤 [10.0, 5000.0]",
+      "before": 318395,
+      "after": 318103,
+      "removed": 292,
+      "note": ""
+    },
+    {
+      "step": "单价阈值过滤 [3000.0, 150000.0]",
+      "before": 318103,
+      "after": 317738,
+      "removed": 365,
+      "note": ""
+    },
+    {
+      "step": "户室列非数值行剔除（#NAME? / 串列）",
+      "before": 317738,
+      "after": 317718,
+      "removed": 20,
+      "note": ""
+    },
+    {
+      "step": "卫生间数 <= 10",
+      "before": 317718,
+      "after": 317718,
+      "removed": 0,
+      "note": ""
+    }
+  ],
+  "prefilter_diag": {
+    "rows_after_date_filter": 318435,
+    "building_type_invalid": 20,
+    "building_type_missing": 2019,
+    "renovation_zero": 14
+  },
+  "notes": {
+    "building_type_rule": "4.6 的非法值置空规则为防御性规则：相关行已在「户室列非数值行剔除」步骤被清除，故实际影响 0 行。",
+    "renovation_rule": "同上，renovationCondition=0 的行已被上游规则清除。",
+    "imputation": "本脚本不做任何统计量填充；缺失值填充在建模 Pipeline 内用训练集 fit，防止时序泄漏。"
+  },
+  "columns": [
+    "id",
+    "url",
+    "trade_date",
+    "district",
+    "district_name",
+    "lng",
+    "lat",
+    "square",
+    "rooms",
+    "halls",
+    "kitchen",
+    "bathrooms",
+    "floor_position",
+    "total_floors",
+    "construction_year",
+    "house_age",
+    "renovation",
+    "building_type",
+    "building_structure",
+    "ladder_ratio",
+    "elevator",
+    "subway",
+    "five_years",
+    "community_average",
+    "total_price",
+    "unit_price",
+    "cid",
+    "followers"
+  ],
+  "missing": {
+    "total_floors": 1268,
+    "construction_year": 19207,
+    "house_age": 19315,
+    "building_type": 1997,
+    "community_average": 446
+  },
+  "missing_ratio": {
+    "total_floors": 0.399,
+    "construction_year": 6.045,
+    "house_age": 6.079,
+    "building_type": 0.629,
+    "community_average": 0.14
+  },
+  "district_counts": {
+    "朝阳区": 107070,
+    "昌平区": 38239,
+    "海淀区": 38088,
+    "西城区": 31237,
+    "丰台区": 29278,
+    "东城区": 17054,
+    "大兴区": 15289,
+    "通州区": 13950,
+    "石景山区": 11355,
+    "顺义区": 9166,
+    "房山区": 2951,
+    "亦庄": 2534,
+    "门头沟区": 1507
+  },
+  "price_stats": {
+    "total_price": {
+      "count": 317718.0,
+      "mean": 349.55191647939364,
+      "std": 226.13268824983433,
+      "min": 10.0,
+      "25%": 205.0,
+      "50%": 295.0,
+      "75%": 426.0,
+      "max": 4900.0
+    },
+    "unit_price": {
+      "count": 317718.0,
+      "mean": 43618.68666238614,
+      "std": 21622.63665026043,
+      "min": 3006.0,
+      "25%": 28125.0,
+      "50%": 38782.0,
+      "75%": 53852.0,
+      "max": 150000.0
+    },
+    "skew_total_price": 2.896212475326146
+  },
+  "parquet_written": true
+}

@@ -30,10 +30,19 @@ data/*.csv
 data/*.xlsx
 data/*.xls
 data/*.json
+data/*.parquet
+data/*.feather
+# 清洗质量报告属于交付物，需纳入版本控制（放在上面的 *.json 之后覆盖）
+!data/cleaning_report.json
+!data/metrics_v1.json
+!data/metrics_tuned_v1.json
+!data/stability_v1.json
+!data/feature_columns_v1.json
 !data/.gitkeep
 # 模型文件与训练产物
 *.pkl
 *.joblib
+data/models/
 *.h5
 *.ckpt
 *.onnx

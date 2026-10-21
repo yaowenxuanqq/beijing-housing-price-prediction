@@ -1,0 +1,43 @@
+{
+  "version": "v1",
+  "group_key": "cid",
+  "group_impute_cols": [
+    "house_age",
+    "total_floors"
+  ],
+  "numeric": [
+    "square",
+    "rooms",
+    "halls",
+    "kitchen",
+    "bathrooms",
+    "total_floors",
+    "house_age",
+    "ladder_ratio",
+    "dist_to_center"
+  ],
+  "categorical": [
+    "district_name",
+    "floor_position",
+    "renovation",
+    "building_type",
+    "building_structure",
+    "elevator",
+    "subway",
+    "five_years"
+  ],
+  "excluded": [
+    "community_average",
+    "lng",
+    "lat",
+    "url",
+    "id",
+    "cid",
+    "trade_date",
+    "total_price",
+    "unit_price"
+  ],
+  "target_total_price": "total_price",
+  "target_unit_price": "unit_price",
+  "note": "特征顺序即训练顺序；推理端必须按此清单组装，序列化对象为完整 Pipeline。"
+}
