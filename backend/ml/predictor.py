@@ -1,0 +1,100 @@
+# -*- coding: utf-8 -*-
+"""在线推理：加载调参后的完整 Pipeline，输出 ratio → 单价 → 总价。"""
+
+from __future__ import annotations
+
+import threading
+
+import joblib
+import numpy as np
+import pandas as pd
+
+from .preprocessing import prepare
+
+# 训练集 ratio 的近似边界（p0.05%~p99.95%），防止外推爆炸
+RATIO_MIN, RATIO_MAX = 0.05, 9.0
+
+# 各区中心坐标（用于请求未提供经纬度时估算距市中心距离）
+DISTRICT_CENTROIDS = {
+    "东城区": (116.4321, 39.9230),
+    "西城区": (116.3628, 39.9055),
+    "朝阳区": (116.4772, 39.9391),
+    "海淀区": (116.3329, 39.9806),
+    "丰台区": (116.3708, 39.8581),
+    "石景山区": (116.2104, 39.9152),
+    "通州区": (116.6648, 39.9006),
+    "昌平区": (116.3633, 40.0827),
+    "大兴区": (116.3447, 39.7724),
+    "亦庄": (116.5004, 39.8041),
+    "顺义区": (116.6547, 40.1245),
+    "房山区": (116.1728, 39.7639),
+    "门头沟区": (116.1197, 39.9374),
+}
+
+DEFAULTS = {
+    "cid": -1,
+    "rooms": 2, "halls": 1, "kitchen": 1, "bathrooms": 1,
+    "total_floors": 6.0, "house_age": 20.0, "ladder_ratio": 2.0,
+    "floor_position": "中", "renovation": 3,
+    "building_type": 1, "building_structure": 2,
+    "elevator": 0, "subway": 0, "five_years": 0,
+}
+
+
+class HousingPredictor:
+    _instance = None
+    _lock = threading.Lock()
+
+    @classmethod
+    def instance(cls):
+        with cls._lock:
+            if cls._instance is None:
+                from django.conf import settings
+                cls._instance = cls(settings.MODEL_PATH, settings.MODEL_VERSION)
+            return cls._instance
+
+    def __init__(self, model_path: str, version: str):
+        self.pipe = joblib.load(model_path)
+        self.version = version
+        self.feature_names = list(self.pipe.named_steps["prep"].get_feature_names_out())
+
+    def predict(self, payload: dict) -> dict:
+        district = payload["district_name"]
+        lng = payload.get("lng")
+        lat = payload.get("lat")
+        if lng is None or lat is None:
+            lng, lat = DISTRICT_CENTROIDS.get(district, (116.3975, 39.9087))
+
+        row = {**DEFAULTS}
+        for k in ["cid", "rooms", "halls", "kitchen", "bathrooms", "total_floors",
+                  "house_age", "ladder_ratio", "floor_position", "renovation",
+                  "building_type", "building_structure"]:
+            if payload.get(k) is not None:
+                row[k] = payload[k]
+        for k in ["elevator", "subway", "five_years"]:
+            row[k] = int(bool(payload.get(k, False)))
+
+        row.update({
+            "square": float(payload["square"]),
+            "district_name": district,
+            "lng": float(lng),
+            "lat": float(lat),
+        })
+
+        X = prepare(pd.DataFrame([row]))
+        raw_ratio = float(self.pipe.predict(X)[0])
+        ratio = float(np.clip(raw_ratio, RATIO_MIN, RATIO_MAX))
+        market = float(payload["market_median_unit_price"])
+        unit_price = ratio * market
+        total_price = unit_price * row["square"] / 10000.0
+
+        return {
+            "ratio": round(ratio, 4),
+            "predicted_unit_price": round(unit_price, 0),
+            "predicted_total_price": round(total_price, 1),
+            "market_median_unit_price": round(market, 0),
+            "model_version": self.version,
+            "currency": "CNY",
+            "unit": "万元",
+            "note": "相对行情估值；绝对价格依赖输入的当期该区中位单价",
+        }
