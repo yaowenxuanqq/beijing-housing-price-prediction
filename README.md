@@ -2,135 +2,142 @@
 
 **基于机器学习的房价预测与可视化分析系统设计与实现**
 
----
+本科毕业设计项目。基于北京链家二手房成交数据（2011–2017，317,718 条清洗后记录），完成数据清洗、EDA、四组模型实验、Django API 与 Vue 可视化系统。
 
-## 项目简介
+## 当前状态
 
-本项目以北京二手房市场为研究对象，基于 Kaggle 公开的北京链家二手房成交数据集（2011–2017 年，约 31.8 万条记录），构建一个集**数据可视化分析**与**房价预测**于一体的 Web 系统。
-
-系统使用多种机器学习模型（线性回归、决策树、随机森林、XGBoost、MLP 神经网络）进行房价建模与对比，并通过可视化界面展示房价分布、区域差异、影响因素与预测结果。
-
-- 专业：数据科学与大数据技术
-- 项目性质：应用研究
-- 当前阶段：系统已完成（后端 + 前端 + 测试），进入论文与中期报告阶段
-
----
-
-## 功能规划
-
-| 模块 | 说明 | 状态 |
+| 模块 | 状态 | 说明 |
 |---|---|---|
-| 数据管理 | 数据导入、预览、缺失值与异常值统计、清洗结果对比 | 数据层已完成 |
-| 可视化分析 | 房价分布、各区均价、面积与价格关系、相关性热力图、特征重要性 | 已接入前端（可视化分析页） |
-| 模型对比 | 多模型 RMSE / MAE / R² 对比、预测值 vs 实际值、残差分析 | 实验已完成（metrics_v1.json） |
-| 房价预测 | 输入房屋特征，实时输出预测总价与折算单价 | 已接口化（M3.5） |
-| 报表导出 | 分析与预测结果导出（可选） | 规划中 |
+| 数据清洗与 EDA | 已完成 | `scripts/01`、`scripts/02`，8 张 EDA 图 |
+| 模型实验 | 已完成 | ES-1～ES-4，五种模型 + 朴素基线 |
+| 模型调优 | 已完成 | ratio 口径调参，3 种子稳定性验证 |
+| 部署模型 | 已完成 | `tuned_rf_es3.joblib`，版本 `tuned_rf_es3_v2` |
+| 后端 | 已完成 | Django 5 + DRF，SQLite |
+| 前端 | 已完成 | Vue 3 + Element Plus + ECharts |
+| 预测区间 | 已完成 | 训练集时序 5 折残差校准，测试覆盖率 78.32% |
+| 工程测试 | 已完成 | 后端 6/6，前端 10/10，lint/build 通过 |
 
----
+## 功能
+
+- **数据管理**：区域、价格、面积、地铁、电梯筛选，排序、分页、详情。
+- **可视化分析**：价格分布、面积关系、相关矩阵、特征重要性、空间散点、年度趋势。
+- **模型对比**：ES-1～ES-4 分组切换，统一单价 R²、MAE、MAPE 与稳定性。
+- **房价预测**：relative ratio 估值，输出单价、总价、80% 校准区间。
+- **工程能力**：图表导出、URL 筛选同步、独立错误重试、响应式布局。
 
 ## 技术栈
 
 | 层次 | 技术 |
 |---|---|
-| 后端 | Django 5 + Django REST Framework |
-| 后台管理 | Django Admin |
-| 前端 | Vue 3 + Element Plus |
-| 可视化 | ECharts |
-| 数据库 | MySQL 8（开发期可用 SQLite） |
-| 数据处理 | pandas + numpy |
-| 机器学习 | scikit-learn + XGBoost |
-| 地理处理 | GeoPandas / Shapely |
+| 数据处理 | Python 3.12、pandas、NumPy、PyArrow |
+| 机器学习 | scikit-learn、XGBoost、joblib |
+| 后端 | Django 5.2、Django REST Framework、SQLite |
+| 前端 | Vue 3.5、Vite 6、Element Plus、ECharts、Pinia、Axios |
+| 测试 | Django TestCase、Vitest、ESLint、Prettier |
 
----
-
-## 数据来源
-
-- 数据集：Kaggle 北京链家二手房成交数据（2011–2017 年，约 31.8 万条，26 个字段）
-- 获取方式：请从 Kaggle 搜索 `Beijing housing price` / `Lianjia` 相关数据集下载
-- 放置位置：下载后重命名为 `new.csv`，放入 `data/` 目录
-- 编码格式：**GBK**，使用 pandas 读取时需指定 `encoding='gbk'`
-
-> 数据集文件体积较大（约 58.7 MB），**不纳入版本控制**，请勿提交至仓库。
-
-### 主要字段
-
-| 字段 | 含义 |
-|---|---|
-| tradeTime | 交易时间 |
-| totalPrice | 总价（万元） |
-| price | 单价（元/平方米） |
-| square | 面积（平方米） |
-| livingRoom / drawingRoom | 卧室数 / 客厅数 |
-| kitchen / bathRoom | 厨房数 / 卫生间数 |
-| floor | 楼层信息（如「中 6」表示中层、共 6 层） |
-| constructionTime | 建造年份 |
-| renovationCondition | 装修情况编码 |
-| buildingType / buildingStructure | 建筑类型 / 建筑结构编码 |
-| elevator / subway / fiveYearsProperty | 电梯 / 近地铁 / 满五年 |
-| district | 区域编码（1–13） |
-| Lng / Lat | 经纬度 |
-| communityAverage | 小区均价 |
-
----
+> Python 依赖已锁定。本机实测新版 NumPy/pandas/scikit-learn 会触发 DLL 加载失败，请勿随意升级。
 
 ## 目录结构
 
-```
+```text
 beijing-housing-price-prediction/
-├── backend/               # Django 后端（API + Admin + SQLite）
-├── frontend/              # Vue 3 + Element Plus + ECharts 前端
-├── backend/ml/            # 特征工程、评估指标（训练/推理共用）
-├── data/                  # 数据集与实验产物（大数据文件不入库）
-├── docs/                  # 项目文档 + figures/ 图表
-├── scripts/               # 01_清洗 / 02_EDA / 03_训练 / 04_调参
+├── backend/                 # Django API、数据模型、推理封装
+├── data/                    # 原始数据、清洗数据、指标 JSON、模型产物
+├── docs/                    # 分类文档与静态素材
+│   ├── 01-课题材料/
+│   ├── 02-模型实验/
+│   ├── 03-系统开发/
+│   ├── 04-运行维护/
+│   └── assets/
+├── frontend/                # Vue 3 前端
+├── scripts/                 # 清洗、EDA、训练、调参、稳定性脚本
+├── .env.example
 ├── requirements.txt
-├── .gitignore
 └── README.md
 ```
 
----
-
 ## 快速开始
 
-> 数据工程、模型实验、Django 后端与 Vue 前端均已完成，可本地一键运行。
+### 1. 环境
 
-```bash
-# 1. 创建并激活虚拟环境
+- Python **3.12**
+- Node.js 24 / npm 11
+- Windows PowerShell
+
+```powershell
 python -m venv .venv
-.venv\Scripts\activate
-
-# 2. 安装依赖
-pip install -r requirements.txt
-
-# 3. 启动后端
-python manage.py runserver
-
-# 4. 启动前端
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 cd frontend
 npm install
+cd ..
+```
+
+### 2. 数据与模型
+
+原始数据放入：
+
+```text
+data/new.csv
+```
+
+完整重建流程：
+
+```powershell
+.\.venv\Scripts\python.exe scripts\01_clean_data.py
+.\.venv\Scripts\python.exe scripts\02_eda.py
+.\.venv\Scripts\python.exe scripts\03_train.py
+.\.venv\Scripts\python.exe scripts\04_tune.py
+.\.venv\Scripts\python.exe scripts\05_stability.py
+```
+
+部署模型输出为 `data/models/tuned_rf_es3.joblib`。模型与大体积数据不入库。
+
+### 3. 启动后端
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe manage.py migrate
+..\.venv\Scripts\python.exe manage.py load_data
+..\.venv\Scripts\python.exe manage.py runserver
+```
+
+后端：`http://127.0.0.1:8000/api/v1/`
+
+### 4. 启动前端
+
+```powershell
+cd frontend
 npm run dev
 ```
 
----
+前端：`http://127.0.0.1:5173/`
+
+## 模型口径
+
+| 实验 | 划分 | 目标 | 用途 |
+|---|---|---|---|
+| ES-1 | 随机 | log1p(总价) | 同分布能力 |
+| ES-2 | 时序 | log1p(总价) | 时间外推局限 |
+| ES-3 | 时序 | ratio | 部署口径 |
+| ES-4 | 随机 | ratio | 乐观上界对照 |
+
+部署模型预测的是**相对行情估值**，不是未来房价走势。绝对价格依赖输入的当期区域中位单价。
+
+当前区间采用训练集内部 `TimeSeriesSplit(5)` 折外残差校准，独立测试集覆盖率 **78.32%**，属于经验校准区间，不是严格置信区间。
 
 ## 项目文档
 
-- [项目计划书](docs/项目计划书.md)
-- [毕设时间节点](docs/毕设时间节点.pdf)
+完整文档见 [docs/README.md](docs/README.md)。
 
----
-
-## 开发规范
-
-| 项 | 规则 |
-|---|---|
-| 分支策略 | 单 `main` 分支 |
-| 提交规范 | Conventional Commits（`feat:` / `fix:` / `docs:` / `chore:`） |
-| 不提交内容 | 数据集（`data/*.csv`）、模型文件（`*.pkl`）、`node_modules/`、虚拟环境、`.env` |
-| 模型训练 | 训练脚本离线运行，模型产物不入库，可复现 |
-
----
+- [项目计划书](docs/01-课题材料/项目计划书.md)
+- [开题报告](docs/01-课题材料/开题报告.md)
+- [模型实验结果](docs/02-模型实验/模型实验结果-v1.md)
+- [模型调参结果](docs/02-模型实验/模型调参结果-v1.md)
+- [EDA 图表说明](docs/02-模型实验/EDA图表说明.md)
+- [后端接口说明](docs/03-系统开发/后端接口说明-v1.md)
+- [前端说明](docs/03-系统开发/前端说明-v1.md)
+- [运行指南](docs/04-运行维护/运行指南.md)
 
 ## 数据与免责声明
 
-本项目为本科毕业设计，仅用于学术研究与技术实践。数据集来源为 Kaggle 公开数据，版权归原作者所有。系统预测结果基于历史成交数据，**仅用于研究演示，不构成任何购房或投资建议**。
+数据来源于 Kaggle 公开北京二手房成交数据，版权归原作者所有。本项目仅用于本科毕业设计与学术演示，预测结果不构成购房或投资建议。

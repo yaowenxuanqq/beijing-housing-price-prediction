@@ -2,7 +2,7 @@
 """
 01_clean_data.py —— 北京二手房数据清洗
 
-依据：docs/项目计划书.md 4.6 清洗阈值（唯一依据）
+依据：docs/01-课题材料/项目计划书.md 4.6 清洗阈值（唯一依据）
 输出：
   data/clean.csv            清洗后数据集（UTF-8-SIG，Excel 可直接打开）
   data/clean.parquet        清洗后数据集（供建模读取，保留 dtype）

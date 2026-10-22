@@ -3,7 +3,7 @@
 02_eda.py —— 探索性数据分析（EDA）
 
 输入：data/clean.parquet（由 01_clean_data.py 产出）
-输出：docs/figures/*.png + docs/figures/eda_summary.md
+输出：docs/assets/figures/*.png + docs/02-模型实验/EDA图表说明.md
 
 图表清单（对应项目计划书 5.2 可视化分析模块）：
   fig01 房价分布（原始 vs log1p）
@@ -32,8 +32,10 @@ import seaborn as sns
 # ---------------- 路径与样式 ----------------
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "clean.parquet"
-FIG_DIR = ROOT / "docs" / "figures"
+FIG_DIR = ROOT / "docs" / "assets" / "figures"
+SUMMARY_DOC = ROOT / "docs" / "02-模型实验" / "EDA图表说明.md"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
+SUMMARY_DOC.parent.mkdir(parents=True, exist_ok=True)
 
 plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
@@ -242,9 +244,19 @@ def main() -> int:
     summary.append("- 单价与总价存在数学换算关系，建模时二者互斥使用（见计划书 4.5）")
     summary.append("- community_average 与目标高度相关，建模一律排除\n")
 
-    (FIG_DIR / "eda_summary.md").write_text("\n".join(summary), encoding="utf-8")
+    summary.append("## 9. 图表文件\n")
+    summary.append("图表位于 [`../assets/figures/`](../assets/figures/)，文件清单：\n")
+    figure_names = [
+        "fig01_price_distribution.png", "fig02_unit_price_by_district.png",
+        "fig03_area_vs_price.png", "fig04_correlation_heatmap.png",
+        "fig05_price_heatmap.png", "fig06_yearly_trend.png",
+        "fig07_category_effects.png", "fig08_house_age_effect.png"
+    ]
+    for i, name in enumerate(figure_names, start=1):
+        summary.append(f"- [fig{i:02d}](../assets/figures/{name})")
+    SUMMARY_DOC.write_text("\n".join(summary), encoding="utf-8")
     print()
-    print(f"完成：8 张图表 + eda_summary.md -> {FIG_DIR}")
+    print(f"完成：8 张图表 + EDA图表说明.md -> {FIG_DIR} / {SUMMARY_DOC}")
     print("=" * 66)
     return 0
 

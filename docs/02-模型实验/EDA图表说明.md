@@ -90,3 +90,16 @@
 - community_average 缺失 0.14%（须在训练 Pipeline 内用**训练集**统计量填充）
 - 单价与总价存在数学换算关系，建模时二者互斥使用（见计划书 4.5）
 - community_average 与目标高度相关，建模一律排除
+
+## 9. 图表文件
+
+图表位于 [`../assets/figures/`](../assets/figures/)，文件清单：
+
+- [fig01](../assets/figures/fig01_price_distribution.png)
+- [fig02](../assets/figures/fig02_unit_price_by_district.png)
+- [fig03](../assets/figures/fig03_area_vs_price.png)
+- [fig04](../assets/figures/fig04_correlation_heatmap.png)
+- [fig05](../assets/figures/fig05_price_heatmap.png)
+- [fig06](../assets/figures/fig06_yearly_trend.png)
+- [fig07](../assets/figures/fig07_category_effects.png)
+- [fig08](../assets/figures/fig08_house_age_effect.png)
