@@ -70,6 +70,6 @@ onBeforeUnmount(() => {
   border: 1px dashed var(--border-subtle);
   border-radius: var(--radius-sm);
 }
-.fallback-title { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.fallback-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .fallback-text { font-size: 12px; }
 </style>

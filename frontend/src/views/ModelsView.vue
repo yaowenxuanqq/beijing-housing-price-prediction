@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import ChartCard from '../components/ChartCard.vue'
+import PageHeader from '../components/PageHeader.vue'
 import BaseChart from '../components/BaseChart.vue'
 import { fetchModelMetrics } from '../api/endpoints'
 import { useAsync } from '../composables/useAsync'
@@ -17,6 +18,24 @@ const experiments = [
 ]
 
 const modelNames = { baseline: '朴素基线', linear: '线性回归', tree: '决策树', rf: '随机森林', xgboost: 'XGBoost', mlp: 'MLP' }
+
+const experimentMeta = computed(() => {
+  if (experiment.value === 'ES2_time_logtotal') {
+    return {
+      type: 'warning',
+      title: 'ES-2 的负 R² 属于预期结果',
+      description: '该实验不使用当期行情中位价。时间外推时价格水平发生漂移，树模型无法外推，因此负 R² 说明绝对价格外推失败，而不是代码实现错误。'
+    }
+  }
+  if (experiment.value === 'ES4_random_ratio') {
+    return {
+      type: 'info',
+      title: 'ES-4 仅作乐观上界对照',
+      description: '随机划分会让测试集包含与训练期相同的年份。该结果不能代表真实时间外推能力，也未纳入调参范围。'
+    }
+  }
+  return null
+})
 
 onMounted(loadMetrics)
 
@@ -81,16 +100,31 @@ const stability = computed(() => metrics.value?.stability)
 
 <template>
   <div class="page">
-    <div class="page-header">
-      <h2>模型对比</h2>
-      <span class="sub">基线 / 调参 / 稳定性 · 统一单价口径 R²</span>
-    </div>
+    <PageHeader
+      title="模型实验对比"
+      description="统一使用还原后的单价 R² 比较模型，兼顾基线、调参、时间外推与部署口径。"
+      eyebrow="Models · 实验评估"
+    >
+      <template #actions>
+        <el-tag type="info" effect="plain" round>主指标：单价 R²</el-tag>
+      </template>
+    </PageHeader>
 
     <div class="toolbar card">
       <el-radio-group v-model="experiment">
         <el-radio-button v-for="e in experiments" :key="e.value" :value="e.value">{{ e.label }}</el-radio-button>
       </el-radio-group>
     </div>
+
+    <el-alert
+      v-if="experimentMeta"
+      class="experiment-note mt-16"
+      :type="experimentMeta.type"
+      :title="experimentMeta.title"
+      :description="experimentMeta.description"
+      :closable="false"
+      show-icon
+    />
 
     <div class="grid grid-2 mt-16" v-loading="loading">
       <section class="card">
@@ -160,8 +194,9 @@ const stability = computed(() => metrics.value?.stability)
 
 <style scoped>
 .toolbar { padding: 12px 16px; }
+.experiment-note { border-radius: var(--radius-md); }
 .stability { display: flex; align-items: center; justify-content: space-between; }
-.big { font-size: 30px; font-weight: 700; color: var(--primary); margin: 4px 0; }
+.big { font-size: 30px; font-weight: 700; color: var(--color-primary); margin: 4px 0; }
 .pm { font-size: 15px; color: var(--text-secondary); font-weight: 500; }
 .up { color: #67c23a; font-weight: 600; }
 .down { color: #f56c6c; font-weight: 600; }

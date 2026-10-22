@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import PageHeader from '../components/PageHeader.vue'
 import { useAppStore } from '../stores/app'
 import { predict } from '../api/endpoints'
 import { fmtNumber } from '../utils/format'
@@ -95,10 +96,15 @@ const gaugeLeft = computed(() => {
 
 <template>
   <div class="page">
-    <div class="page-header">
-      <h2>房价预测</h2>
-      <span class="sub">基于房屋特征的相对行情估值（ratio × 当期区中位单价）</span>
-    </div>
+    <PageHeader
+      title="房价预测"
+      description="输入房屋特征与当期区域行情，输出相对行情估值、折算总价及 80% 时序交叉验证校准区间。"
+      eyebrow="Prediction · 智能估值"
+    >
+      <template #actions>
+        <el-tag type="success" effect="plain" round>{{ store.modelVersion }}</el-tag>
+      </template>
+    </PageHeader>
 
     <div class="predict-grid">
       <section class="card">
@@ -239,15 +245,15 @@ const gaugeLeft = computed(() => {
   min-height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px; color: var(--text-secondary); font-size: 14px;
 }
-.empty-icon { font-size: 36px; color: var(--primary); }
+.empty-icon { font-size: 36px; color: var(--color-primary); }
 .result-card { background: linear-gradient(160deg, #ffffff 0%, #f2f7ff 100%); }
 .result-label { font-size: 13px; color: var(--text-secondary); }
-.result-price { font-size: 40px; font-weight: 700; color: var(--primary); line-height: 1.2; margin-top: 6px; }
+.result-price { font-size: 40px; font-weight: 700; color: var(--color-primary); line-height: 1.2; margin-top: 6px; }
 .result-price .unit { font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-left: 6px; }
 .result-total { margin-top: 4px; font-size: 15px; }
-.result-total b { color: var(--text-main); }
+.result-total b { color: var(--text-primary); }
 .kv { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 6px 0; color: var(--text-secondary); }
-.kv b { color: var(--text-main); }
+.kv b { color: var(--text-primary); }
 .result-note { margin-top: 12px; font-size: 12px; color: #909399; line-height: 1.6; }
 .interval { margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
 .interval-note { margin-top: 5px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }

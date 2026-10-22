@@ -58,20 +58,30 @@ function refresh() { window.location.reload() }
       <div class="sidebar-footer">
         <div>数据区间 2011 – 2017</div>
         <div>317,718 条成交记录</div>
+        <div class="sidebar-version">System v1.6 · Model v2</div>
       </div>
     </aside>
 
     <div class="main">
       <header class="topbar">
-        <div class="topbar-title">{{ pageTitle }}</div>
+        <div class="topbar-left">
+          <span class="crumb-root">北京二手房</span>
+          <span class="crumb-separator">/</span>
+          <span class="topbar-title">{{ pageTitle }}</span>
+        </div>
         <div class="topbar-right">
+          <span class="context-pill">北京 · 2011–2017</span>
           <el-tag size="small" type="success" effect="plain">模型 {{ store.modelVersion }}</el-tag>
-          <span class="muted">随机森林 · ratio 口径</span>
-          <el-button size="small" @click="refresh">刷新</el-button>
+          <span class="muted model-note">随机森林 · ratio 口径</span>
+          <el-button size="small" plain @click="refresh">刷新页面</el-button>
         </div>
       </header>
       <main class="content">
-        <router-view />
+        <router-view v-slot="{ Component, route: currentRoute }">
+          <transition name="page" mode="out-in">
+            <component :is="Component" :key="currentRoute.path" />
+          </transition>
+        </router-view>
       </main>
     </div>
   </div>
@@ -85,8 +95,11 @@ function refresh() { window.location.reload() }
 }
 .brand { display: flex; align-items: center; gap: 10px; padding: 20px 18px 18px; }
 .logo {
-  width: 36px; height: 36px; border-radius: 8px; background: var(--color-primary);
+  width: 38px; height: 38px; border-radius: 11px;
+  background: linear-gradient(145deg, #4f83ff 0%, var(--color-primary) 55%, #2457c8 100%);
+  box-shadow: 0 7px 18px rgba(47, 111, 237, .30);
   color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  letter-spacing: -.04em;
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.3; }
 .brand-text b { color: #fff; font-size: 15px; }
@@ -111,21 +124,45 @@ function refresh() { window.location.reload() }
 .nav-icon { width: 16px; text-align: center; opacity: .9; }
 .sidebar-footer {
   margin-top: auto; padding: 16px 18px; font-size: 11px; line-height: 1.8;
-  color: #6b7688; border-top: 1px solid rgba(255,255,255,.06);
+  color: #758196; border-top: 1px solid rgba(255,255,255,.06);
 }
+.sidebar-version { margin-top: 5px; color: #586579; }
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .topbar {
-  height: 56px; flex: 0 0 56px; background: #fff; border-bottom: 1px solid var(--border-subtle);
+  height: 58px; flex: 0 0 58px; background: rgba(255,255,255,.9);
+  backdrop-filter: blur(14px); border-bottom: 1px solid var(--border-subtle);
   display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+  position: relative; z-index: 20;
 }
-.topbar-title { font-size: 16px; font-weight: 600; }
-.topbar-right { display: flex; align-items: center; gap: 12px; }
-.content { flex: 1; overflow: auto; }
+.topbar-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.crumb-root { color: var(--text-muted); font-size: var(--font-13); }
+.crumb-separator { color: #c5cad3; font-size: 12px; }
+.topbar-title { font-size: var(--font-14); font-weight: 650; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.context-pill {
+  padding: 4px 9px; border-radius: 999px; background: var(--bg-page);
+  color: var(--text-secondary); font-size: 11px; border: 1px solid var(--border-subtle);
+}
+.content { flex: 1; overflow: auto; scroll-behavior: smooth; }
+.page-enter-active, .page-leave-active { transition: opacity .22s ease, transform .22s ease; }
+.page-enter-from { opacity: 0; transform: translateY(7px); }
+.page-leave-to { opacity: 0; transform: translateY(-4px); }
 
+@media (max-width: 1180px) {
+  .model-note, .context-pill { display: none; }
+}
 @media (max-width: 1024px) {
   .sidebar { width: 64px; flex-basis: 64px; }
   .brand-text, .nav-item span:last-child, .nav-group, .sidebar-footer { display: none; }
   .brand { justify-content: center; padding: 16px 0; }
   .nav-item { justify-content: center; padding: 12px 0; }
+  .topbar { padding: 0 16px; }
+}
+@media (max-width: 640px) {
+  .crumb-root, .crumb-separator, .topbar-right .muted { display: none; }
+  .topbar-right { gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active, .page-leave-active { transition: none; }
 }
 </style>

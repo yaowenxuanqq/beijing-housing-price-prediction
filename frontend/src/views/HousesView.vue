@@ -1,6 +1,7 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PageHeader from '../components/PageHeader.vue'
 import { fetchHouses } from '../api/endpoints'
 import { useAppStore } from '../stores/app'
 import { fmtNumber } from '../utils/format'
@@ -27,6 +28,10 @@ const filters = reactive({
   subway: '',
   elevator: ''
 })
+
+const activeFilterCount = computed(() =>
+  Object.values(filters).filter(v => v !== '' && v !== undefined && v !== null).length
+)
 
 async function load() {
   loading.value = true
@@ -112,10 +117,18 @@ watch(() => route.query.district, v => {
 
 <template>
   <div class="page">
-    <div class="page-header">
-      <h2>数据管理</h2>
-      <span class="sub">清洗后房源明细 · 共 {{ fmtNumber(total) }} 条</span>
-    </div>
+    <PageHeader
+      title="房源数据管理"
+      description="检索清洗后的成交明细，支持区域、价格、面积、地铁与电梯条件组合筛选。"
+      eyebrow="Dataset · 数据管理"
+    >
+      <template #actions>
+        <el-tag type="info" effect="plain" round>共 {{ fmtNumber(total) }} 条</el-tag>
+        <el-tag v-if="activeFilterCount" type="warning" effect="plain" round>
+          {{ activeFilterCount }} 个筛选生效
+        </el-tag>
+      </template>
+    </PageHeader>
 
     <section class="card filter-bar">
       <el-select v-model="filters.district" placeholder="全部区域" clearable style="width: 150px">

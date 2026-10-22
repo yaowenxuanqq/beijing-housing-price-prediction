@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import ChartCard from '../components/ChartCard.vue'
+import PageHeader from '../components/PageHeader.vue'
 import BaseChart from '../components/BaseChart.vue'
 import { fetchCorrelation, fetchDistribution, fetchImportance } from '../api/endpoints'
 import { fmtNumber } from '../utils/format'
@@ -107,10 +108,15 @@ const impOption = computed(() => {
 
 <template>
   <div class="page">
-    <div class="page-header">
-      <h2>可视化分析</h2>
-      <span class="sub">分布、关系、相关性与特征重要性</span>
-    </div>
+    <PageHeader
+      title="可视化分析"
+      description="从价格分布、面积关系、特征相关性与模型重要性四个视角理解北京二手房市场。"
+      eyebrow="Analysis · 探索分析"
+    >
+      <template #actions>
+        <el-tag type="info" effect="plain" round>相关性抽样 2 万行</el-tag>
+      </template>
+    </PageHeader>
 
     <div v-if="failedLabels.length" class="card error-banner">
       部分数据加载失败：{{ failedLabels.join('、') }}。其他图表仍可查看。

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import StatCard from '../components/StatCard.vue'
 import ChartCard from '../components/ChartCard.vue'
+import PageHeader from '../components/PageHeader.vue'
 import BaseChart from '../components/BaseChart.vue'
 import DotGrid from '../components/fx/DotGrid.vue'
 import RevealOnScroll from '../components/fx/RevealOnScroll.vue'
@@ -147,8 +148,16 @@ function onDistrictClick(params) {
     <div class="hero">
       <DotGrid :opacity="0.16" />
       <div class="hero-content">
-        <h2>概览大屏</h2>
-        <p class="sub">北京二手房成交数据 2011–2017 · 点击区域柱状图可下钻查看房源</p>
+        <PageHeader
+          title="北京二手房市场概览"
+          description="聚合 2011–2017 年链家成交记录，快速查看区域价格、空间分布与年度趋势。点击区域柱状图可下钻房源明细。"
+          eyebrow="Overview · 数据总览"
+          flush
+        >
+          <template #actions>
+            <el-tag type="success" effect="plain" round>数据已汇总</el-tag>
+          </template>
+        </PageHeader>
       </div>
     </div>
 
@@ -208,8 +217,6 @@ function onDistrictClick(params) {
   margin-bottom: var(--space-4);
 }
 .hero-content { position: relative; z-index: 1; }
-.hero h2 { margin: 0 0 6px; font-size: var(--font-20); font-weight: 600; }
-.hero .sub { margin: 0; color: var(--text-secondary); font-size: var(--font-13); }
 .note-card { font-size: 12px; color: var(--text-secondary); padding: 12px 18px; }
 .error-banner { margin-bottom: var(--space-4); color: var(--color-danger); display: flex; align-items: center; gap: 8px; }
 .block-reveal { display: block; }
