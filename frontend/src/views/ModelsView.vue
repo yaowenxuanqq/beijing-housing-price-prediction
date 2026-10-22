@@ -25,6 +25,7 @@ onMounted(async () => {
 const baseExp = computed(() => metrics.value?.baseline?.experiments?.find(e => e.experiment === experiment.value))
 
 const maeDisplay = (row) => row.mae_unit_price ?? row.mae
+const noTunedData = computed(() => tunedRows.value.length === 0)
 
 const baseRows = computed(() => {
   const e = baseExp.value
@@ -94,7 +95,8 @@ const stability = computed(() => metrics.value?.stability)
 
       <section class="card">
         <h3 class="card-title">调参后结果</h3>
-        <el-table :data="tunedRows" stripe size="small" height="330">
+        <el-empty v-if="noTunedData" description="该实验未纳入调参范围（ES-4 仅作对照）" :image-size="70" />
+        <el-table v-else :data="tunedRows" stripe size="small" height="330">
           <el-table-column prop="model" label="模型" width="100" />
           <el-table-column label="R²（单价）" width="110" align="right">
             <template #default="{ row }">{{ fmtR2(row.r2_unit) }}</template>

@@ -51,6 +51,7 @@ class DistrictStatsView(APIView):
 
 
 _CORR_CACHE = None
+_CORR_CACHE_ROWS = None
 
 
 class YearlyStatsView(APIView):
@@ -102,8 +103,9 @@ class CorrelationView(APIView):
     LEAKAGE_FIELDS = ["unit_price", "total_price", "community_average"]
 
     def get(self, request):
-        global _CORR_CACHE
-        if _CORR_CACHE is None:
+        global _CORR_CACHE, _CORR_CACHE_ROWS
+        current_rows = House.objects.count()
+        if _CORR_CACHE is None or _CORR_CACHE_ROWS != current_rows:
             # 随机取样：避免按物理顺序取前 N 行导致的时间偏倚
             qs = House.objects.order_by("?").values(*self.FIELDS)[:20000]
             df = pd.DataFrame(list(qs))
@@ -117,6 +119,7 @@ class CorrelationView(APIView):
                 "sample_size": int(len(df)),
                 "leakage_fields": self.LEAKAGE_FIELDS,
             }
+            _CORR_CACHE_ROWS = current_rows
         return Response(_CORR_CACHE)
 
 

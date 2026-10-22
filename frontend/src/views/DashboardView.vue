@@ -49,24 +49,33 @@ const districtOption = computed(() => {
   }
 })
 
-const heatmapOption = computed(() => ({
-  grid: { left: 56, right: 24, top: 20, bottom: 48 },
-  tooltip: {
-    formatter: p => `${p.data[2]}<br/>${fmtNumber(Math.round(p.data[3]))} 元/㎡`
-  },
-  xAxis: { type: 'value', name: '经度', scale: true, nameTextStyle: { fontSize: 11 } },
-  yAxis: { type: 'value', name: '纬度', scale: true, nameTextStyle: { fontSize: 11 } },
-  visualMap: {
-    min: 20000, max: 120000, orient: 'horizontal', left: 'center', bottom: 4,
-    text: ['高', '低'], textStyle: { fontSize: 10 }, itemWidth: 10, itemHeight: 80,
-    inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#fee090', '#f46d43', '#d73027'] }
-  },
-  series: [{
-    type: 'scatter', large: true, symbolSize: 3,
-    data: heatmap.value.map(r => [r.lng, r.lat, r.district, r.unit_price]),
-    itemStyle: { opacity: 0.55 }
-  }]
-}))
+const heatmapOption = computed(() => {
+  const prices = heatmap.value.map(r => r.unit_price).sort((a, b) => a - b)
+  const lo = prices.length ? prices[Math.floor(prices.length * 0.02)] : 15000
+  const hi = prices.length ? prices[Math.floor(prices.length * 0.98)] : 105000
+  return {
+    grid: { left: 56, right: 24, top: 20, bottom: 48 },
+    tooltip: {
+      formatter: p => `${p.data[2]}<br/>${fmtNumber(Math.round(p.data[3]))} 元/㎡`
+    },
+    xAxis: { type: 'value', name: '经度', scale: true, nameTextStyle: { fontSize: 11 } },
+    yAxis: { type: 'value', name: '纬度', scale: true, nameTextStyle: { fontSize: 11 } },
+    visualMap: {
+      // 关键：显式指定第 4 维（unit_price）为颜色映射维度
+      dimension: 3,
+      min: lo, max: hi,
+      orient: 'horizontal', left: 'center', bottom: 4,
+      text: ['高', '低'], textStyle: { fontSize: 10 }, itemWidth: 10, itemHeight: 80,
+      inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#fee090', '#f46d43', '#d73027'] }
+    },
+    series: [{
+      // 5000 点无需 large 模式；large 会削弱 visualMap 的颜色映射
+      type: 'scatter', symbolSize: 4,
+      data: heatmap.value.map(r => [r.lng, r.lat, r.district, r.unit_price]),
+      itemStyle: { opacity: 0.6 }
+    }]
+  }
+})
 
 const yearlyOption = computed(() => ({
   grid: { left: 56, right: 56, top: 28, bottom: 28 },

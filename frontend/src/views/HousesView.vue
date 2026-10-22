@@ -41,6 +41,12 @@ async function reset() {
   await load()
 }
 
+function onSizeChange() {
+  // 页码本来就是 1 时，size-change 不会触发 current-change，需要主动加载一次
+  if (page.value === 1) load()
+  else page.value = 1
+}
+
 function openDetail(row) {
   detail.value = row
   drawer.value = true
@@ -110,7 +116,7 @@ onMounted(async () => {
           :total="total"
           layout="total, sizes, prev, pager, next, jumper"
           @current-change="load"
-          @size-change="page = 1; load()"
+          @size-change="onSizeChange"
         />
       </div>
     </section>
