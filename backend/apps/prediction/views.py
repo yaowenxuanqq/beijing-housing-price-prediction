@@ -31,6 +31,8 @@ class PredictView(APIView):
             predicted_ratio=result["ratio"],
             predicted_unit_price=result["predicted_unit_price"],
             predicted_total_price=result["predicted_total_price"],
+            interval_low=result["interval_low"],
+            interval_high=result["interval_high"],
             market_median_unit_price=result["market_median_unit_price"],
             model_version=result["model_version"],
         )

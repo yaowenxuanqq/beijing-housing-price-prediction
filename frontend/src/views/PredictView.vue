@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAppStore } from '../stores/app'
 import { predict } from '../api/endpoints'
@@ -32,6 +32,12 @@ const rules = {
   square: [{ required: true, message: '请输入面积', trigger: 'blur' }],
   market_median_unit_price: [{ required: true, message: '请输入当期行情中位单价', trigger: 'blur' }]
 }
+
+const presets = [
+  { key: 'starter', label: '刚需两居', values: { square: 70, rooms: 2, halls: 1, bathrooms: 1, floor_position: '中', total_floors: 18, house_age: 15, renovation: 2, elevator: true, subway: false, five_years: true } },
+  { key: 'improve', label: '改善三居', values: { square: 110, rooms: 3, halls: 2, bathrooms: 2, floor_position: '中', total_floors: 12, house_age: 8, renovation: 3, elevator: true, subway: true, five_years: true } },
+  { key: 'school', label: '学区房', values: { square: 60, rooms: 2, halls: 1, bathrooms: 1, floor_position: '低', total_floors: 6, house_age: 25, renovation: 3, elevator: false, subway: true, five_years: true } }
+]
 
 const renovationOptions = [
   { value: 1, label: '1 级（简装）' },
@@ -75,6 +81,16 @@ function reset() {
   formRef.value?.resetFields()
   result.value = null
 }
+
+function applyPreset(preset) {
+  Object.assign(form, preset.values)
+  result.value = null
+}
+
+const gaugeLeft = computed(() => {
+  const r = Number(result.value?.ratio || 1)
+  return Math.max(0, Math.min(100, ((r - 0.7) / 0.6) * 100))
+})
 </script>
 
 <template>
@@ -87,6 +103,10 @@ function reset() {
     <div class="predict-grid">
       <section class="card">
         <h3 class="card-title">房屋信息</h3>
+        <div class="preset-row">
+          <span class="muted">快速填充：</span>
+          <el-button v-for="p in presets" :key="p.key" size="small" @click="applyPreset(p)">{{ p.label }}</el-button>
+        </div>
         <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" label-position="left">
           <el-row :gutter="12">
             <el-col :span="12">
@@ -183,6 +203,22 @@ function reset() {
           <div class="result-total">
             折算总价 <b class="num">{{ fmtNumber(result.predicted_total_price) }} 万元</b>
           </div>
+          <div class="interval">
+            80% 经验区间：{{ fmtNumber(result.interval_low) }} – {{ fmtNumber(result.interval_high) }} 元/㎡
+          </div>
+          <div class="interval">
+            总价区间：{{ fmtNumber(result.interval_total_low) }} – {{ fmtNumber(result.interval_total_high) }} 万元
+          </div>
+
+          <div class="gauge">
+            <div class="gauge-track">
+              <div class="gauge-zone"></div>
+              <div class="gauge-marker" :style="{ left: gaugeLeft + '%' }"></div>
+            </div>
+            <div class="gauge-labels">
+              <span>0.9 偏低</span><span>1.0 行情</span><span>1.1 偏高</span>
+            </div>
+          </div>
           <el-divider />
           <div class="kv"><span>相对行情 ratio</span><b class="num">{{ result.ratio }}</b></div>
           <div class="kv"><span>当期区中位单价</span><b class="num">{{ fmtNumber(result.market_median_unit_price) }} 元/㎡</b></div>
@@ -211,6 +247,13 @@ function reset() {
 .kv { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 6px 0; color: var(--text-secondary); }
 .kv b { color: var(--text-main); }
 .result-note { margin-top: 12px; font-size: 12px; color: #909399; line-height: 1.6; }
+.interval { margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+.preset-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.gauge { margin-top: 14px; }
+.gauge-track { position: relative; height: 6px; border-radius: 3px; background: #e8eefc; }
+.gauge-zone { position: absolute; left: 33.3%; width: 33.3%; height: 100%; background: #c9dcff; border-radius: 3px; }
+.gauge-marker { position: absolute; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--color-primary); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.2); transform: translateX(-6px); transition: left .4s ease; }
+.gauge-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--text-muted); }
 @media (max-width: 1000px) {
   .predict-grid { grid-template-columns: 1fr; }
   .result-wrap { position: static; }

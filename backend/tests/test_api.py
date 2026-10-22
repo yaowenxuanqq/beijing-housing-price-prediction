@@ -51,6 +51,9 @@ class ApiSmokeTests(TestCase):
         data = r.json()
         self.assertIn("predicted_total_price", data)
         self.assertIn("model_version", data)
+        self.assertLessEqual(data["interval_low"], data["predicted_unit_price"])
+        self.assertGreaterEqual(data["interval_high"], data["predicted_unit_price"])
+        self.assertEqual(data["interval_level"], 0.8)
         # 响应三字段可互推
         self.assertAlmostEqual(
             data["ratio"] * data["market_median_unit_price"],

@@ -9,6 +9,8 @@ class PredictionLog(models.Model):
     predicted_ratio = models.FloatField(null=True)
     predicted_unit_price = models.FloatField(null=True)
     predicted_total_price = models.FloatField(null=True)
+    interval_low = models.FloatField(null=True)
+    interval_high = models.FloatField(null=True)
     market_median_unit_price = models.FloatField(null=True)
     model_version = models.CharField(max_length=64, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

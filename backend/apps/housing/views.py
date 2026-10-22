@@ -59,6 +59,14 @@ class HouseListView(generics.ListAPIView):
             qs = qs.filter(elevator=v)
         if p.get("q"):
             qs = qs.filter(Q(district_name__icontains=p["q"]))
+
+        ordering = p.get("ordering")
+        if ordering:
+            field = ordering.lstrip("-")
+            allowed = {"total_price", "unit_price", "square", "trade_date", "id"}
+            if field not in allowed:
+                raise ValidationError({"ordering": f"不支持的排序字段：{field}"})
+            qs = qs.order_by(ordering, "-id")
         return qs
 
 

@@ -6,21 +6,28 @@ import { fetchCorrelation, fetchDistribution, fetchImportance } from '../api/end
 import { fmtNumber } from '../utils/format'
 
 const loading = ref(true)
+const loadError = ref(false)
 const dist = ref(null)
 const corr = ref(null)
 const importance = ref([])
 const showAllImportance = ref(false)
 
-onMounted(async () => {
+async function load() {
+  loading.value = true
+  loadError.value = false
   try {
     const [d, c, i] = await Promise.all([fetchDistribution(), fetchCorrelation(), fetchImportance()])
     dist.value = d
     corr.value = c
     importance.value = i
+  } catch (e) {
+    loadError.value = true
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(load)
 
 const toolbox = {
   right: 4, top: 0,
@@ -90,6 +97,11 @@ const impOption = computed(() => {
       <span class="sub">分布、关系、相关性与特征重要性</span>
     </div>
 
+    <div v-if="loadError" class="card error-banner">
+      数据加载失败，请确认后端已启动
+      <el-button size="small" type="primary" link @click="load">重试</el-button>
+    </div>
+
     <div class="grid grid-2">
       <ChartCard title="总价分布" :loading="loading" :empty="!dist?.histogram?.counts?.length">
         <BaseChart :option="histOption" height="320px" />
@@ -125,4 +137,5 @@ const impOption = computed(() => {
 
 <style scoped>
 .note { font-size: 12px; color: var(--text-secondary); padding: 12px 18px; line-height: 1.6; }
+.error-banner { margin-bottom: var(--space-4); color: var(--color-danger); display: flex; align-items: center; gap: 8px; }
 </style>

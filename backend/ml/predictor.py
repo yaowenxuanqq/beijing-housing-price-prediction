@@ -86,17 +86,42 @@ class HousingPredictor:
         })
 
         X = prepare(pd.DataFrame([row]))
-        raw_ratio = float(self.pipe.predict(X)[0])
+        prep = self.pipe.named_steps["prep"]
+        model = self.pipe.named_steps["model"]
+        Xt = prep.transform(X)
+
+        raw_ratio = float(model.predict(Xt)[0])
         ratio = float(np.clip(raw_ratio, RATIO_MIN, RATIO_MAX))
+
+        # 80% 经验区间：随机森林逐棵树预测的 p10–p90
+        # 注意：这是模型内部离散度，不是校准后的统计置信区间
+        if hasattr(model, "estimators_"):
+            tree_preds = np.array([float(t.predict(Xt)[0]) for t in model.estimators_])
+            lo_r = float(np.percentile(tree_preds, 10))
+            hi_r = float(np.percentile(tree_preds, 90))
+        else:
+            lo_r, hi_r = ratio * 0.95, ratio * 1.05
+        lo_r = float(np.clip(lo_r, RATIO_MIN, RATIO_MAX))
+        hi_r = float(np.clip(hi_r, RATIO_MIN, RATIO_MAX))
+        lo_r, hi_r = min(lo_r, ratio), max(hi_r, ratio)
+
         market = float(payload["market_median_unit_price"])
-        # 先定单价再反算 ratio，保证响应三字段可互推
         unit_price = round(ratio * market, 0)
         total_price = unit_price * row["square"] / 10000.0
+        unit_low = round(lo_r * market, 0)
+        unit_high = round(hi_r * market, 0)
+        total_low = round(unit_low * row["square"] / 10000.0, 1)
+        total_high = round(unit_high * row["square"] / 10000.0, 1)
 
         return {
             "ratio": round(unit_price / market, 6),
-            "predicted_unit_price": round(unit_price, 0),
+            "predicted_unit_price": unit_price,
             "predicted_total_price": round(total_price, 1),
+            "interval_low": unit_low,
+            "interval_high": unit_high,
+            "interval_total_low": total_low,
+            "interval_total_high": total_high,
+            "interval_level": 0.8,
             "market_median_unit_price": round(market, 0),
             "model_version": self.version,
             "currency": "CNY",

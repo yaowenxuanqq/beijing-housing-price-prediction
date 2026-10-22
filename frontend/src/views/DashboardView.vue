@@ -11,12 +11,15 @@ import { fmtNumber } from '../utils/format'
 
 const router = useRouter()
 const loading = ref(true)
+const loadError = ref(false)
 const overview = ref(null)
 const districts = ref([])
 const heatmap = ref([])
 const yearly = ref([])
 
-onMounted(async () => {
+async function load() {
+  loading.value = true
+  loadError.value = false
   try {
     const [o, d, h, y] = await Promise.all([
       fetchOverview(), fetchDistrictStats(), fetchHeatmap(5000), fetchYearlyStats()
@@ -25,10 +28,14 @@ onMounted(async () => {
     districts.value = d
     heatmap.value = h
     yearly.value = y
+  } catch (e) {
+    loadError.value = true
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(load)
 
 const toolbox = {
   right: 4, top: 0,
@@ -127,6 +134,11 @@ function onDistrictClick(params) {
       </div>
     </div>
 
+    <div v-if="loadError" class="card error-banner">
+      数据加载失败，请确认后端已启动
+      <el-button size="small" type="primary" link @click="load">重试</el-button>
+    </div>
+
     <div class="grid grid-4">
       <RevealOnScroll :delay="0">
         <StatCard label="房源总数" :value="overview?.count || 0" unit="条" hint="清洗后有效样本" />
@@ -178,5 +190,6 @@ function onDistrictClick(params) {
 .hero h2 { margin: 0 0 6px; font-size: var(--font-20); font-weight: 600; }
 .hero .sub { margin: 0; color: var(--text-secondary); font-size: var(--font-13); }
 .note-card { font-size: 12px; color: var(--text-secondary); padding: 12px 18px; }
+.error-banner { margin-bottom: var(--space-4); color: var(--color-danger); display: flex; align-items: center; gap: 8px; }
 .block-reveal { display: block; }
 </style>

@@ -1,15 +1,17 @@
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { fetchHouses, fetchMetaOptions } from '../api/endpoints'
 import { fmtNumber } from '../utils/format'
 
 const route = useRoute()
+const router = useRouter()
 const loading = ref(false)
 const rows = ref([])
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
+const sort = ref('-trade_date')
 const districts = ref([])
 const drawer = ref(false)
 const detail = ref(null)
@@ -29,6 +31,7 @@ async function load() {
   try {
     const params = { page: page.value, page_size: pageSize.value }
     Object.entries(filters).forEach(([k, v]) => { if (v !== '' && v !== undefined && v !== null) params[k] = v })
+    if (sort.value) params.ordering = sort.value
     const data = await fetchHouses(params)
     rows.value = data.results
     total.value = data.count
@@ -37,9 +40,45 @@ async function load() {
   }
 }
 
+function readQuery() {
+  const q = route.query
+  if (q.district) filters.district = String(q.district)
+  for (const k of ['min_price', 'max_price', 'min_square', 'max_square']) {
+    if (q[k]) filters[k] = Number(q[k])
+  }
+  if (q.subway !== undefined) filters.subway = String(q.subway)
+  if (q.elevator !== undefined) filters.elevator = String(q.elevator)
+  if (q.ordering) sort.value = String(q.ordering)
+}
+
+function syncQuery() {
+  const q = {}
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== '' && v !== undefined && v !== null) q[k] = String(v)
+  })
+  if (sort.value) q.ordering = sort.value
+  router.replace({ query: q })
+}
+
+function onSortChange({ prop, order }) {
+  if (!order) sort.value = '-trade_date'
+  else sort.value = (order === 'descending' ? '-' : '') + prop
+  syncQuery()
+  page.value = 1
+  load()
+}
+
+async function search() {
+  page.value = 1
+  syncQuery()
+  await load()
+}
+
 async function reset() {
   Object.assign(filters, { district: '', min_price: undefined, max_price: undefined, min_square: undefined, max_square: undefined, subway: '', elevator: '' })
+  sort.value = '-trade_date'
   page.value = 1
+  syncQuery()
   await load()
 }
 
@@ -56,7 +95,7 @@ function openDetail(row) {
 
 onMounted(async () => {
   try { districts.value = (await fetchMetaOptions()).districts } catch (e) {}
-  if (route.query.district) filters.district = String(route.query.district)
+  readQuery()
   await load()
 })
 
@@ -89,25 +128,27 @@ watch(() => route.query.district, v => {
       <el-select v-model="filters.elevator" placeholder="电梯" clearable style="width: 100px">
         <el-option label="有电梯" value="1" /><el-option label="无电梯" value="0" />
       </el-select>
-      <el-button type="primary" @click="page = 1; load()">查询</el-button>
+      <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="reset">重置</el-button>
     </section>
 
     <section class="card mt-16">
-      <el-table :data="rows" v-loading="loading" stripe height="560" @row-click="openDetail" style="cursor: pointer">
+      <el-table :data="rows" v-loading="loading" stripe height="560" @row-click="openDetail"
+                @sort-change="onSortChange" :default-sort="{ prop: 'trade_date', order: 'descending' }"
+                style="cursor: pointer">
         <el-table-column prop="district_name" label="区域" width="100" />
-        <el-table-column prop="square" label="面积（㎡）" width="110" align="right">
+        <el-table-column prop="square" label="面积（㎡）" width="110" align="right" sortable="custom">
           <template #default="{ row }">{{ row.square.toFixed(1) }}</template>
         </el-table-column>
         <el-table-column label="户型" width="100">
           <template #default="{ row }">{{ row.rooms }}室{{ row.halls }}厅</template>
         </el-table-column>
         <el-table-column prop="floor_position" label="楼层" width="80" />
-        <el-table-column prop="trade_date" label="成交日期" width="120" />
-        <el-table-column prop="total_price" label="总价（万）" width="110" align="right">
+        <el-table-column prop="trade_date" label="成交日期" width="120" sortable="custom" />
+        <el-table-column prop="total_price" label="总价（万）" width="110" align="right" sortable="custom">
           <template #default="{ row }">{{ fmtNumber(row.total_price) }}</template>
         </el-table-column>
-        <el-table-column prop="unit_price" label="单价（元/㎡）" min-width="140" align="right">
+        <el-table-column prop="unit_price" label="单价（元/㎡）" min-width="140" align="right" sortable="custom">
           <template #default="{ row }">{{ fmtNumber(row.unit_price) }}</template>
         </el-table-column>
         <el-table-column label="配套" min-width="140">

@@ -26,6 +26,23 @@ const baseExp = computed(() => metrics.value?.baseline?.experiments?.find(e => e
 
 const maeDisplay = (row) => row.mae_unit_price ?? row.mae
 const noTunedData = computed(() => tunedRows.value.length === 0)
+const bestBaseR2 = computed(() => Math.max(...baseRows.value.filter(r => r.model !== '朴素基线').map(r => r.r2_unit)))
+const bestTunedR2 = computed(() => Math.max(...tunedRows.value.map(r => r.r2_unit)))
+const baselineByModel = computed(() => Object.fromEntries(baseRows.value.map(r => [r.model, r.r2_unit])))
+
+function deltaFor(row) {
+  const b = baselineByModel.value[row.model]
+  return b == null ? null : row.r2_unit - b
+}
+function deltaText(row) {
+  const d = deltaFor(row)
+  if (d == null) return '—'
+  return (d >= 0 ? '↑ +' : '↓ ') + (d * 100).toFixed(2) + ' pp'
+}
+function deltaClass(row) {
+  const d = deltaFor(row)
+  return d == null ? '' : (d >= 0 ? 'up' : 'down')
+}
 
 const baseRows = computed(() => {
   const e = baseExp.value
@@ -81,7 +98,12 @@ const stability = computed(() => metrics.value?.stability)
       <section class="card">
         <h3 class="card-title">基线参数结果</h3>
         <el-table :data="baseRows" stripe size="small" height="330">
-          <el-table-column prop="model" label="模型" width="100" />
+          <el-table-column label="模型" width="120">
+            <template #default="{ row }">
+              {{ row.model }}
+              <el-tag v-if="row.model !== '朴素基线' && row.r2_unit === bestBaseR2" size="small" type="warning" effect="plain" style="margin-left: 4px">最优</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="R²（单价）" width="110" align="right">
             <template #default="{ row }">{{ fmtR2(row.r2_unit) }}</template>
           </el-table-column>
@@ -98,11 +120,19 @@ const stability = computed(() => metrics.value?.stability)
         <h3 class="card-title">调参后结果</h3>
         <el-empty v-if="noTunedData" description="该实验未纳入调参范围（ES-4 仅作对照）" :image-size="70" />
         <el-table v-else :data="tunedRows" stripe size="small" height="330">
-          <el-table-column prop="model" label="模型" width="100" />
-          <el-table-column label="R²（单价）" width="110" align="right">
+          <el-table-column label="模型" width="120">
+            <template #default="{ row }">
+              {{ row.model }}
+              <el-tag v-if="row.r2_unit === bestTunedR2" size="small" type="warning" effect="plain" style="margin-left: 4px">最优</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="R²（单价）" width="100" align="right">
             <template #default="{ row }">{{ fmtR2(row.r2_unit) }}</template>
           </el-table-column>
-          <el-table-column label="MAE（元/㎡）" width="120" align="right">
+          <el-table-column label="相对基线" width="110" align="right">
+            <template #default="{ row }"><span :class="deltaClass(row)">{{ deltaText(row) }}</span></template>
+          </el-table-column>
+          <el-table-column label="MAE（元/㎡）" width="110" align="right">
             <template #default="{ row }">{{ fmtNumber(Math.round(maeDisplay(row))) }}</template>
           </el-table-column>
           <el-table-column label="MAPE" align="right">
@@ -135,4 +165,6 @@ const stability = computed(() => metrics.value?.stability)
 .stability { display: flex; align-items: center; justify-content: space-between; }
 .big { font-size: 30px; font-weight: 700; color: var(--primary); margin: 4px 0; }
 .pm { font-size: 15px; color: var(--text-secondary); font-weight: 500; }
+.up { color: #67c23a; font-weight: 600; }
+.down { color: #f56c6c; font-weight: 600; }
 </style>
