@@ -11,28 +11,46 @@ import { fmtNumber } from '../utils/format'
 
 const router = useRouter()
 const loading = ref(true)
-const loadError = ref(false)
+const overviewError = ref(false)
+const districtError = ref(false)
+const heatmapError = ref(false)
+const yearlyError = ref(false)
 const overview = ref(null)
 const districts = ref([])
 const heatmap = ref([])
 const yearly = ref([])
 
+const failedLabels = computed(() => [
+  overviewError.value && '概览指标',
+  districtError.value && '区域均价',
+  heatmapError.value && '空间分布',
+  yearlyError.value && '年度趋势'
+].filter(Boolean))
+
 async function load() {
   loading.value = true
-  loadError.value = false
-  try {
-    const [o, d, h, y] = await Promise.all([
-      fetchOverview(), fetchDistrictStats(), fetchHeatmap(5000), fetchYearlyStats()
-    ])
-    overview.value = o
-    districts.value = d
-    heatmap.value = h
-    yearly.value = y
-  } catch {
-    loadError.value = true
-  } finally {
-    loading.value = false
-  }
+  overviewError.value = false
+  districtError.value = false
+  heatmapError.value = false
+  yearlyError.value = false
+
+  const [overviewResult, districtResult, heatmapResult, yearlyResult] = await Promise.allSettled([
+    fetchOverview(), fetchDistrictStats(), fetchHeatmap(5000), fetchYearlyStats()
+  ])
+
+  if (overviewResult.status === 'fulfilled') overview.value = overviewResult.value
+  else overviewError.value = true
+
+  if (districtResult.status === 'fulfilled') districts.value = districtResult.value
+  else districtError.value = true
+
+  if (heatmapResult.status === 'fulfilled') heatmap.value = heatmapResult.value
+  else heatmapError.value = true
+
+  if (yearlyResult.status === 'fulfilled') yearly.value = yearlyResult.value
+  else yearlyError.value = true
+
+  loading.value = false
 }
 
 onMounted(load)
@@ -95,9 +113,9 @@ const heatmapOption = computed(() => {
 
 const yearlyOption = computed(() => ({
   toolbox,
-  grid: { left: 56, right: 56, top: 36, bottom: 28 },
+  grid: { left: 56, right: 56, top: 52, bottom: 28 },
   tooltip: { trigger: 'axis' },
-  legend: { top: 2, right: 24, itemWidth: 12, itemHeight: 8 },
+  legend: { top: 4, left: 68, itemWidth: 12, itemHeight: 8 },
   xAxis: { type: 'category', data: yearly.value.map(r => r.year) },
   yAxis: [
     { type: 'value', name: '成交量', nameTextStyle: { fontSize: 11 } },
@@ -112,7 +130,7 @@ const yearlyOption = computed(() => ({
       markLine: {
         symbol: 'none', silent: true,
         lineStyle: { color: '#faad14', type: 'dashed' },
-        label: { formatter: '2017 政策节点', fontSize: 10, color: '#faad14' },
+        label: { formatter: '2017 政策节点', position: 'insideEndTop', distance: 4, fontSize: 10, color: '#faad14' },
         data: [{ xAxis: '2017' }]
       }
     }
@@ -134,41 +152,44 @@ function onDistrictClick(params) {
       </div>
     </div>
 
-    <div v-if="loadError" class="card error-banner">
-      数据加载失败，请确认后端已启动
+    <div v-if="failedLabels.length" class="card error-banner">
+      部分数据加载失败：{{ failedLabels.join('、') }}。其他区块仍可查看。
       <el-button size="small" type="primary" link @click="load">重试</el-button>
     </div>
 
     <div class="grid grid-4">
       <RevealOnScroll :delay="0">
-        <StatCard label="房源总数" :value="overview?.count || 0" unit="条" hint="清洗后有效样本" />
+        <StatCard label="房源总数" :value="overview?.count || 0" unit="条" :hint="overviewError ? '概览接口加载失败' : '清洗后有效样本'" />
       </RevealOnScroll>
       <RevealOnScroll :delay="60">
-        <StatCard label="平均单价" :value="Math.round(overview?.avg_unit_price || 0)" unit="元/㎡" hint="全样本算术平均" accent="#13c2c2" />
+        <StatCard label="平均单价" :value="Math.round(overview?.avg_unit_price || 0)" unit="元/㎡" :hint="overviewError ? '概览接口加载失败' : '全样本算术平均'" accent="#13c2c2" />
       </RevealOnScroll>
       <RevealOnScroll :delay="120">
-        <StatCard label="平均总价" :value="Number(overview?.avg_total_price || 0)" :decimals="1" unit="万" hint="全样本算术平均" accent="#faad14" />
+        <StatCard label="平均总价" :value="Number(overview?.avg_total_price || 0)" :decimals="1" unit="万" :hint="overviewError ? '概览接口加载失败' : '全样本算术平均'" accent="#faad14" />
       </RevealOnScroll>
       <RevealOnScroll :delay="180">
-        <StatCard label="覆盖区域" :value="overview?.districts || 0" unit="个" hint="含亦庄经开区" accent="#8172b3" />
+        <StatCard label="覆盖区域" :value="overview?.districts || 0" unit="个" :hint="overviewError ? '概览接口加载失败' : '含亦庄经开区'" accent="#8172b3" />
       </RevealOnScroll>
     </div>
 
     <div class="grid grid-2 mt-16">
       <RevealOnScroll :delay="80">
-        <ChartCard title="各区二手房均价" :loading="loading" :empty="!districts.length">
+        <ChartCard title="各区二手房均价" :loading="loading" :error="districtError" :empty="!districts.length"
+                   @retry="load">
           <BaseChart :option="districtOption" height="360px" @chart-click="onDistrictClick" />
         </ChartCard>
       </RevealOnScroll>
       <RevealOnScroll :delay="140">
-        <ChartCard title="房价空间分布" :loading="loading" :empty="!heatmap.length">
+        <ChartCard title="房价空间分布" :loading="loading" :error="heatmapError" :empty="!heatmap.length"
+                   @retry="load">
           <BaseChart :option="heatmapOption" height="360px" />
         </ChartCard>
       </RevealOnScroll>
     </div>
 
     <RevealOnScroll :delay="100" class="mt-16 block-reveal">
-      <ChartCard title="年度成交量与均价趋势" :loading="loading" :empty="!yearly.length">
+      <ChartCard title="年度成交量与均价趋势" :loading="loading" :error="yearlyError" :empty="!yearly.length"
+                 @retry="load">
         <BaseChart :option="yearlyOption" height="300px" />
       </ChartCard>
     </RevealOnScroll>

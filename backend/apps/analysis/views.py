@@ -52,6 +52,8 @@ class DistrictStatsView(APIView):
 
 _CORR_CACHE = None
 _CORR_CACHE_ROWS = None
+_META_OPTIONS_CACHE = None
+_META_OPTIONS_ROWS = None
 
 
 class YearlyStatsView(APIView):
@@ -154,6 +156,11 @@ class MetaOptionsView(APIView):
     """预测表单可选项 + 各区当期行情中位单价（2017 年）"""
 
     def get(self, request):
+        global _META_OPTIONS_CACHE, _META_OPTIONS_ROWS
+        current_rows = House.objects.count()
+        if _META_OPTIONS_CACHE is not None and _META_OPTIONS_ROWS == current_rows:
+            return Response(_META_OPTIONS_CACHE)
+
         districts = list(House.objects.values_list("district_name", flat=True).distinct().order_by("district_name"))
         floor_positions = list(House.objects.exclude(floor_position="")
                                .values_list("floor_position", flat=True).distinct().order_by("floor_position"))
@@ -169,7 +176,7 @@ class MetaOptionsView(APIView):
                 market = {k: round(float(v), 0) for k, v in
                           df.groupby("district_name").unit_price.median().items()}
 
-        return Response({
+        _META_OPTIONS_CACHE = {
             "districts": districts,
             "floor_positions": floor_positions,
             "renovation": [1, 2, 3, 4],
@@ -177,7 +184,9 @@ class MetaOptionsView(APIView):
             "building_structure": [1, 2, 3, 4, 5, 6, 7],
             "latest_year": latest_year,
             "market_median_unit_price": market,
-        })
+        }
+        _META_OPTIONS_ROWS = current_rows
+        return Response(_META_OPTIONS_CACHE)
 
 
 class ModelMetricsView(APIView):

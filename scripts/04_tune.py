@@ -102,6 +102,7 @@ def eval_log_total(pipe, tr, te):
     lo, hi = float(tr.total_price.min()), float(tr.total_price.max())
     pred = np.clip(pred, lo, hi)
     m = reg_metrics(te.total_price.to_numpy(), pred, 10.0)
+    m["r2_target"] = "log1p_total_price"
     unit_pred = pred * 10000 / te.square.to_numpy()
     m["mae_unit_price"] = float(np.mean(np.abs(te.unit_price.to_numpy() - unit_pred)))
     m["r2_unit"] = float(r2_score(te.unit_price.to_numpy(), unit_pred))
@@ -119,6 +120,7 @@ def eval_ratio(pipe, tr, te):
     pred = np.clip(pred, float(y_tr.min()), float(y_tr.max()))   # 同上，截断到训练 ratio 范围
     unit_pred = pred * base_te
     m = reg_metrics(te.unit_price.to_numpy(), unit_pred, 10000.0)
+    m["r2_target"] = "unit_price"
     m["r2_ratio"] = float(1 - np.sum((y_te - pred) ** 2) / np.sum((y_te - y_te.mean()) ** 2))
     m["r2_unit"] = m["r2"]      # ratio 分支的 m["r2"] 本就是单价口径
     return m, pipe
@@ -190,6 +192,7 @@ def main() -> int:
     # ---- 用最优参数在完整训练集上重训并评估 ----
     print(f"\n{'=' * 70}\n调优后评估\n{'=' * 70}")
     results = {"generated_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+               "metric_schema_version": 2,
                "tuning_target": args.target,
                "tune_sample": TUNE_N, "cv": "TimeSeriesSplit(5)", "seed": SEED,
                "tuning": tuned, "experiments": []}

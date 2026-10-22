@@ -1,11 +1,13 @@
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchHouses, fetchMetaOptions } from '../api/endpoints'
+import { fetchHouses } from '../api/endpoints'
+import { useAppStore } from '../stores/app'
 import { fmtNumber } from '../utils/format'
 
 const route = useRoute()
 const router = useRouter()
+const store = useAppStore()
 const loading = ref(false)
 const rows = ref([])
 const total = ref(0)
@@ -94,7 +96,7 @@ function openDetail(row) {
 }
 
 onMounted(async () => {
-  try { districts.value = (await fetchMetaOptions()).districts } catch { districts.value = [] }
+  try { districts.value = (await store.loadMeta()).districts } catch { districts.value = [] }
   readQuery()
   await load()
 })

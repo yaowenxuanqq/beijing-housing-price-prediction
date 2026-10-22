@@ -6,25 +6,40 @@ import { fetchCorrelation, fetchDistribution, fetchImportance } from '../api/end
 import { fmtNumber } from '../utils/format'
 
 const loading = ref(true)
-const loadError = ref(false)
+const distError = ref(false)
+const corrError = ref(false)
+const importanceError = ref(false)
 const dist = ref(null)
 const corr = ref(null)
 const importance = ref([])
 const showAllImportance = ref(false)
 
+const failedLabels = computed(() => [
+  distError.value && '分布与散点',
+  corrError.value && '相关性',
+  importanceError.value && '特征重要性'
+].filter(Boolean))
+
 async function load() {
   loading.value = true
-  loadError.value = false
-  try {
-    const [d, c, i] = await Promise.all([fetchDistribution(), fetchCorrelation(), fetchImportance()])
-    dist.value = d
-    corr.value = c
-    importance.value = i
-  } catch {
-    loadError.value = true
-  } finally {
-    loading.value = false
-  }
+  distError.value = false
+  corrError.value = false
+  importanceError.value = false
+
+  const [distResult, corrResult, importanceResult] = await Promise.allSettled([
+    fetchDistribution(), fetchCorrelation(), fetchImportance()
+  ])
+
+  if (distResult.status === 'fulfilled') dist.value = distResult.value
+  else distError.value = true
+
+  if (corrResult.status === 'fulfilled') corr.value = corrResult.value
+  else corrError.value = true
+
+  if (importanceResult.status === 'fulfilled') importance.value = importanceResult.value
+  else importanceError.value = true
+
+  loading.value = false
 }
 
 onMounted(load)
@@ -97,19 +112,22 @@ const impOption = computed(() => {
       <span class="sub">分布、关系、相关性与特征重要性</span>
     </div>
 
-    <div v-if="loadError" class="card error-banner">
-      数据加载失败，请确认后端已启动
+    <div v-if="failedLabels.length" class="card error-banner">
+      部分数据加载失败：{{ failedLabels.join('、') }}。其他图表仍可查看。
       <el-button size="small" type="primary" link @click="load">重试</el-button>
     </div>
 
     <div class="grid grid-2">
-      <ChartCard title="总价分布" :loading="loading" :empty="!dist?.histogram?.counts?.length">
+      <ChartCard title="总价分布" :loading="loading" :error="distError" :empty="!dist?.histogram?.counts?.length"
+                 @retry="load">
         <BaseChart :option="histOption" height="320px" />
       </ChartCard>
-      <ChartCard title="面积与总价关系（抽样 3000）" :loading="loading" :empty="!dist?.scatter?.length">
+      <ChartCard title="面积与总价关系（抽样 3000）" :loading="loading" :error="distError"
+                 :empty="!dist?.scatter?.length" @retry="load">
         <BaseChart :option="scatterOption" height="320px" />
       </ChartCard>
-      <ChartCard title="特征相关性矩阵" :loading="loading" :empty="!corr?.matrix?.length">
+      <ChartCard title="特征相关性矩阵" :loading="loading" :error="corrError" :empty="!corr?.matrix?.length"
+                 @retry="load">
         <template #extra>
           <el-tag v-if="corr?.leakage_fields" size="small" type="warning" effect="plain">
             含泄漏字段：{{ corr.leakage_fields.join(' / ') }}
@@ -117,7 +135,8 @@ const impOption = computed(() => {
         </template>
         <BaseChart :option="corrOption" height="420px" />
       </ChartCard>
-      <ChartCard title="特征重要性（部署模型）" :loading="loading" :empty="!importance.length">
+      <ChartCard title="特征重要性（部署模型）" :loading="loading" :error="importanceError"
+                 :empty="!importance.length" @retry="load">
         <template #extra>
           <el-button v-if="importance.length > 8" size="small" link type="primary"
                      @click="showAllImportance = !showAllImportance">

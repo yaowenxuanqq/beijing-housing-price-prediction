@@ -93,14 +93,27 @@ class HousingPredictor:
         raw_ratio = float(model.predict(Xt)[0])
         ratio = float(np.clip(raw_ratio, RATIO_MIN, RATIO_MAX))
 
-        # 80% 经验区间：随机森林逐棵树预测的 p10–p90
-        # 注意：这是模型内部离散度，不是校准后的统计置信区间
-        if hasattr(model, "estimators_"):
+        # 优先使用训练期时序折外残差分位；旧模型回退到树间离散度。
+        calibration = getattr(self.pipe, "interval_calibration_", None)
+        if calibration and "q_low" in calibration and "q_high" in calibration:
+            lo_r = raw_ratio + float(calibration["q_low"])
+            hi_r = raw_ratio + float(calibration["q_high"])
+            interval_level = float(calibration.get("level", 0.8))
+            interval_method = str(calibration.get("method", "residual_quantile"))
+            interval_note = str(calibration.get(
+                "note", "训练期折外残差经验校准区间，不是严格置信区间。"))
+        elif hasattr(model, "estimators_"):
             tree_preds = np.array([float(t.predict(Xt)[0]) for t in model.estimators_])
             lo_r = float(np.percentile(tree_preds, 10))
             hi_r = float(np.percentile(tree_preds, 90))
+            interval_level = 0.8
+            interval_method = "tree_spread"
+            interval_note = "随机森林树间离散度区间，未经残差覆盖率校准。"
         else:
             lo_r, hi_r = ratio * 0.95, ratio * 1.05
+            interval_level = 0.8
+            interval_method = "heuristic_spread"
+            interval_note = "启发式区间，未经残差覆盖率校准。"
         lo_r = float(np.clip(lo_r, RATIO_MIN, RATIO_MAX))
         hi_r = float(np.clip(hi_r, RATIO_MIN, RATIO_MAX))
         lo_r, hi_r = min(lo_r, ratio), max(hi_r, ratio)
@@ -121,7 +134,9 @@ class HousingPredictor:
             "interval_high": unit_high,
             "interval_total_low": total_low,
             "interval_total_high": total_high,
-            "interval_level": 0.8,
+            "interval_level": interval_level,
+            "interval_method": interval_method,
+            "interval_note": interval_note,
             "market_median_unit_price": round(market, 0),
             "model_version": self.version,
             "currency": "CNY",

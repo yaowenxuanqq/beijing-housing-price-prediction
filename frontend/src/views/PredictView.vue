@@ -204,11 +204,13 @@ const gaugeLeft = computed(() => {
             折算总价 <b class="num">{{ fmtNumber(result.predicted_total_price) }} 万元</b>
           </div>
           <div class="interval">
-            80% 经验区间：{{ fmtNumber(result.interval_low) }} – {{ fmtNumber(result.interval_high) }} 元/㎡
+            {{ Math.round((result.interval_level || 0.8) * 100) }}% 时序交叉验证校准区间：
+            {{ fmtNumber(result.interval_low) }} – {{ fmtNumber(result.interval_high) }} 元/㎡
           </div>
           <div class="interval">
             总价区间：{{ fmtNumber(result.interval_total_low) }} – {{ fmtNumber(result.interval_total_high) }} 万元
           </div>
+          <div v-if="result.interval_note" class="interval-note">{{ result.interval_note }}</div>
 
           <div class="gauge">
             <div class="gauge-track">
@@ -248,6 +250,7 @@ const gaugeLeft = computed(() => {
 .kv b { color: var(--text-main); }
 .result-note { margin-top: 12px; font-size: 12px; color: #909399; line-height: 1.6; }
 .interval { margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+.interval-note { margin-top: 5px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }
 .preset-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 .gauge { margin-top: 14px; }
 .gauge-track { position: relative; height: 6px; border-radius: 3px; background: #e8eefc; }

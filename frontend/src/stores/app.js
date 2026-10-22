@@ -5,7 +5,7 @@ export const useAppStore = defineStore('app', {
   state: () => ({
     meta: null,
     metaLoaded: false,
-    modelVersion: 'tuned_rf_es3_v1'
+    modelVersion: 'tuned_rf_es3_v2'
   }),
   actions: {
     async loadMeta(force = false) {

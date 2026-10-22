@@ -113,7 +113,9 @@ def run_experiment(name: str, df: pd.DataFrame, split: str, target: str) -> dict
         y_te, base_te = ratio_frame(te)
         invert = None
 
+    r2_target = "log1p_total_price" if target == "log_total" else "unit_price"
     results = {"experiment": name, "split": split, "target": target,
+               "r2_target": r2_target,
                "n_train": int(len(tr)), "n_test": int(len(te)), "models": {}}
 
     X_tr, X_te = tr, te
@@ -136,6 +138,7 @@ def run_experiment(name: str, df: pd.DataFrame, split: str, target: str) -> dict
         m["r2_ratio"] = 0.0
         m["r2_unit"] = m["r2"]
         m["note"] = "朴素基线：直接预测该区当期行情中位单价（ratio=1）"
+    m["r2_target"] = r2_target
     m["seconds"] = round(time.time() - t0, 1)
     results["models"]["baseline"] = m
     print(f"  [baseline] R2={m['r2']:.4f}  MAE={m['mae']:.3f}  {m['seconds']}s")
@@ -160,6 +163,7 @@ def run_experiment(name: str, df: pd.DataFrame, split: str, target: str) -> dict
             m["r2_ratio"] = float(r2_score(y_te, pred))
             m["rmse_ratio"] = float(np.sqrt(mean_squared_error(y_te, pred)))
             m["r2_unit"] = m["r2"]      # ratio 分支的 m["r2"] 本就是还原后的单价口径
+        m["r2_target"] = r2_target
         m["seconds"] = round(time.time() - t0, 1)
         results["models"][mname] = m
         extra = f"  MAE_unit={m['mae_unit_price']:.0f}" if "mae_unit_price" in m else ""
@@ -205,6 +209,7 @@ def main() -> int:
 
     METRICS_JSON.write_text(json.dumps({
         "version": "v1",
+        "metric_schema_version": 2,
         "generated_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
         "cut_date": str(CUT_DATE.date()),
         "seed": SEED,

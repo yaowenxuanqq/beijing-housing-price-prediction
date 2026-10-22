@@ -72,5 +72,5 @@ REST_FRAMEWORK = {
 }
 
 MODEL_PATH = config("MODEL_PATH", default=str(PROJECT_ROOT / "data" / "models" / "tuned_rf_es3.joblib"))
-MODEL_VERSION = config("MODEL_VERSION", default="tuned_rf_es3_v1")
+MODEL_VERSION = config("MODEL_VERSION", default="tuned_rf_es3_v2")
 DATA_DIR = PROJECT_ROOT / "data"

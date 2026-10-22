@@ -54,6 +54,10 @@ class ApiSmokeTests(TestCase):
         self.assertLessEqual(data["interval_low"], data["predicted_unit_price"])
         self.assertGreaterEqual(data["interval_high"], data["predicted_unit_price"])
         self.assertEqual(data["interval_level"], 0.8)
+        self.assertIn(data["interval_method"], {
+            "time_series_cv_residual_quantile", "tree_spread", "heuristic_spread"
+        })
+        self.assertTrue(data["interval_note"])
         # 响应三字段可互推
         self.assertAlmostEqual(
             data["ratio"] * data["market_median_unit_price"],
@@ -73,6 +77,13 @@ class ApiSmokeTests(TestCase):
     def test_houses_invalid_numeric_param_returns_400(self):
         r = self.client.get("/api/v1/houses/?min_price=abc")
         self.assertEqual(r.status_code, 400)
+
+    def test_meta_options_returns_market_median(self):
+        r = self.client.get("/api/v1/meta/options/")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertIn("朝阳区", data["districts"])
+        self.assertIn("朝阳区", data["market_median_unit_price"])
 
     def test_correlation_marks_leakage_fields(self):
         r = self.client.get("/api/v1/stats/correlation/")
