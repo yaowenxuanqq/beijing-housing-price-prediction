@@ -9,6 +9,7 @@ const loading = ref(true)
 const dist = ref(null)
 const corr = ref(null)
 const importance = ref([])
+const showAllImportance = ref(false)
 
 onMounted(async () => {
   try {
@@ -21,12 +22,18 @@ onMounted(async () => {
   }
 })
 
+const toolbox = {
+  right: 4, top: 0,
+  feature: { saveAsImage: { title: '保存图片', pixelRatio: 2, backgroundColor: '#fff' } }
+}
+
 const histOption = computed(() => {
   const bins = dist.value?.histogram?.bins || []
   const counts = dist.value?.histogram?.counts || []
   const labels = counts.map((_, i) => ((bins[i] + bins[i + 1]) / 2).toFixed(0))
   return {
-    grid: { left: 50, right: 20, top: 20, bottom: 36 },
+    toolbox,
+    grid: { left: 50, right: 20, top: 30, bottom: 36 },
     tooltip: { trigger: 'axis', formatter: p => `总价约 ${p[0].name} 万<br/>房源数：${fmtNumber(p[0].value)}` },
     xAxis: { type: 'category', data: labels, axisLabel: { fontSize: 10, interval: 4 } },
     yAxis: { type: 'value' },
@@ -35,7 +42,8 @@ const histOption = computed(() => {
 })
 
 const scatterOption = computed(() => ({
-  grid: { left: 56, right: 24, top: 20, bottom: 42 },
+  toolbox,
+  grid: { left: 56, right: 24, top: 30, bottom: 42 },
   tooltip: { formatter: p => `${p.data[0]}㎡ / ${fmtNumber(p.data[1])}万` },
   xAxis: { type: 'value', name: '面积（㎡）' },
   yAxis: { type: 'value', name: '总价（万元）' },
@@ -51,7 +59,8 @@ const corrOption = computed(() => {
   const data = []
   matrix.forEach((row, i) => row.forEach((v, j) => data.push([j, i, Number(v.toFixed(2))])))
   return {
-    grid: { left: 90, right: 20, top: 10, bottom: 70 },
+    toolbox,
+    grid: { left: 90, right: 20, top: 28, bottom: 70 },
     tooltip: { formatter: p => `${fields[p.data[0]]} ~ ${fields[p.data[1]]}: ${p.data[2]}` },
     xAxis: { type: 'category', data: fields, axisLabel: { rotate: 45, fontSize: 10 } },
     yAxis: { type: 'category', data: fields, axisLabel: { fontSize: 10 } },
@@ -61,9 +70,11 @@ const corrOption = computed(() => {
 })
 
 const impOption = computed(() => {
-  const rows = [...importance.value].reverse()
+  const list = showAllImportance.value ? importance.value : importance.value.slice(0, 8)
+  const rows = [...list].reverse()
   return {
-    grid: { left: 120, right: 60, top: 10, bottom: 24 },
+    toolbox,
+    grid: { left: 120, right: 60, top: 28, bottom: 24 },
     xAxis: { type: 'value' },
     yAxis: { type: 'category', data: rows.map(r => r.feature), axisLabel: { fontSize: 11 } },
     tooltip: { trigger: 'axis', formatter: p => `${p[0].name}: ${p[0].value}` },
@@ -95,6 +106,12 @@ const impOption = computed(() => {
         <BaseChart :option="corrOption" height="420px" />
       </ChartCard>
       <ChartCard title="特征重要性（部署模型）" :loading="loading" :empty="!importance.length">
+        <template #extra>
+          <el-button v-if="importance.length > 8" size="small" link type="primary"
+                     @click="showAllImportance = !showAllImportance">
+            {{ showAllImportance ? '收起' : '展开全部' }}
+          </el-button>
+        </template>
         <BaseChart :option="impOption" height="420px" />
       </ChartCard>
     </div>

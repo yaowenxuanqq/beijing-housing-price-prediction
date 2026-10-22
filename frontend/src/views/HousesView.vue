@@ -1,8 +1,10 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { fetchHouses, fetchMetaOptions } from '../api/endpoints'
 import { fmtNumber } from '../utils/format'
 
+const route = useRoute()
 const loading = ref(false)
 const rows = ref([])
 const total = ref(0)
@@ -54,7 +56,16 @@ function openDetail(row) {
 
 onMounted(async () => {
   try { districts.value = (await fetchMetaOptions()).districts } catch (e) {}
+  if (route.query.district) filters.district = String(route.query.district)
   await load()
+})
+
+watch(() => route.query.district, v => {
+  if (v && v !== filters.district) {
+    filters.district = String(v)
+    page.value = 1
+    load()
+  }
 })
 </script>
 

@@ -45,7 +45,8 @@ const compareOption = computed(() => {
   const base = baseRows.value.filter(r => !r.isBaseline)
   const tuned = tunedRows.value
   return {
-    grid: { left: 50, right: 20, top: 40, bottom: 28 },
+    toolbox: { right: 4, top: 0, feature: { saveAsImage: { title: '保存图片', pixelRatio: 2, backgroundColor: '#fff' } } },
+    grid: { left: 50, right: 20, top: 48, bottom: 28 },
     tooltip: { trigger: 'axis' },
     legend: { top: 0 },
     xAxis: { type: 'category', data: base.map(r => r.model) },

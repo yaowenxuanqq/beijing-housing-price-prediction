@@ -1,5 +1,6 @@
 <script setup>
 import EmptyState from './EmptyState.vue'
+import SpotlightCard from './fx/SpotlightCard.vue'
 
 defineProps({
   title: { type: String, required: true },
@@ -10,7 +11,7 @@ defineProps({
 </script>
 
 <template>
-  <section class="card chart-card">
+  <SpotlightCard class="card chart-card">
     <div class="chart-head">
       <h3 class="card-title">{{ title }}</h3>
       <slot name="extra" />
@@ -18,10 +19,10 @@ defineProps({
     <el-skeleton v-if="loading" :rows="5" animated />
     <EmptyState v-else-if="empty" :text="emptyText" />
     <slot v-else />
-  </section>
+  </SpotlightCard>
 </template>
 
 <style scoped>
 .chart-card { display: flex; flex-direction: column; min-width: 0; }
-.chart-head { display: flex; align-items: center; justify-content: space-between; }
+.chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 </style>

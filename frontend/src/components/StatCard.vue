@@ -1,27 +1,32 @@
 <script setup>
+import SpotlightCard from './fx/SpotlightCard.vue'
+import NumberTicker from './fx/NumberTicker.vue'
+
 defineProps({
   label: { type: String, required: true },
-  value: { type: [String, Number], required: true },
+  value: { type: Number, default: 0 },
   unit: { type: String, default: '' },
   hint: { type: String, default: '' },
-  accent: { type: String, default: 'var(--primary)' }
+  decimals: { type: Number, default: 0 },
+  accent: { type: String, default: 'var(--color-primary)' }
 })
 </script>
 
 <template>
-  <div class="card stat">
+  <SpotlightCard class="card interactive stat">
     <div class="stat-label">{{ label }}</div>
-    <div class="stat-value num" :style="{ color: accent }">
-      {{ value }}<span v-if="unit" class="stat-unit">{{ unit }}</span>
+    <div class="stat-value" :style="{ color: accent }">
+      <NumberTicker :value="value" :decimals="decimals" />
+      <span v-if="unit" class="stat-unit">{{ unit }}</span>
     </div>
     <div v-if="hint" class="stat-hint">{{ hint }}</div>
-  </div>
+  </SpotlightCard>
 </template>
 
 <style scoped>
-.stat { display: flex; flex-direction: column; gap: 8px; min-height: 108px; justify-content: center; }
-.stat-label { font-size: 13px; color: var(--text-secondary); }
-.stat-value { font-size: 30px; font-weight: 700; line-height: 1.1; letter-spacing: .5px; }
-.stat-unit { font-size: 13px; font-weight: 500; margin-left: 4px; color: var(--text-secondary); }
-.stat-hint { font-size: 12px; color: #909399; }
+.stat { display: flex; flex-direction: column; gap: 8px; min-height: 112px; justify-content: center; }
+.stat-label { font-size: var(--font-13); color: var(--text-secondary); }
+.stat-value { font-size: var(--font-28); font-weight: 700; line-height: 1.15; letter-spacing: .4px; }
+.stat-unit { font-size: var(--font-13); font-weight: 500; margin-left: 4px; color: var(--text-secondary); }
+.stat-hint { font-size: var(--font-12); color: var(--text-muted); }
 </style>
