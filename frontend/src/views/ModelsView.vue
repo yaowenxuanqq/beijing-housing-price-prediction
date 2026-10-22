@@ -3,11 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import ChartCard from '../components/ChartCard.vue'
 import BaseChart from '../components/BaseChart.vue'
 import { fetchModelMetrics } from '../api/endpoints'
+import { useAsync } from '../composables/useAsync'
 import { fmtNumber, fmtR2, fmtPct } from '../utils/format'
 
-const loading = ref(true)
-const metrics = ref(null)
 const experiment = ref('ES3_time_ratio')
+const { data: metrics, loading, run: loadMetrics } = useAsync(fetchModelMetrics)
 
 const experiments = [
   { value: 'ES1_random_logtotal', label: 'ES-1 随机 + 总价' },
@@ -18,9 +18,7 @@ const experiments = [
 
 const modelNames = { baseline: '朴素基线', linear: '线性回归', tree: '决策树', rf: '随机森林', xgboost: 'XGBoost', mlp: 'MLP' }
 
-onMounted(async () => {
-  try { metrics.value = await fetchModelMetrics() } finally { loading.value = false }
-})
+onMounted(loadMetrics)
 
 const baseExp = computed(() => metrics.value?.baseline?.experiments?.find(e => e.experiment === experiment.value))
 

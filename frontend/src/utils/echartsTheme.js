@@ -1,30 +1,58 @@
-import * as echarts from 'echarts'
+import * as echarts from 'echarts/core'
+import { BarChart, HeatmapChart, LineChart, ScatterChart } from 'echarts/charts'
+import {
+  DataZoomComponent,
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  TitleComponent,
+  ToolboxComponent,
+  TooltipComponent,
+  VisualMapComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 
-export function registerEchartsTheme() {
-  echarts.registerTheme('housing', {
-    color: ['#2f6fed', '#13c2c2', '#faad14', '#f5222d', '#8172b3', '#55a868'],
-    backgroundColor: 'transparent',
-    textStyle: { fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif', color: '#303133' },
-    title: { textStyle: { fontSize: 14, fontWeight: 600, color: '#303133' } },
-    legend: { textStyle: { color: '#606266', fontSize: 12 } },
-    tooltip: {
-      backgroundColor: 'rgba(255,255,255,.96)',
-      borderColor: '#e4e7ed',
-      borderWidth: 1,
-      textStyle: { color: '#303133', fontSize: 12 },
-      extraCssText: 'box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: 6px;'
-    },
-    categoryAxis: {
-      axisLine: { lineStyle: { color: '#dcdfe6' } },
-      axisTick: { show: false },
-      axisLabel: { color: '#606266', fontSize: 11 },
-      splitLine: { show: false }
-    },
-    valueAxis: {
-      axisLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: { color: '#606266', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#ebeef5', type: 'dashed' } }
-    }
-  })
-}
+echarts.use([
+  BarChart,
+  LineChart,
+  ScatterChart,
+  HeatmapChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  VisualMapComponent,
+  ToolboxComponent,
+  DataZoomComponent,
+  TitleComponent,
+  MarkLineComponent,
+  CanvasRenderer
+])
+
+echarts.registerTheme('housing', {
+  color: ['#2f6fed', '#13c2c2', '#faad14', '#f5222d', '#8172b3', '#55a868'],
+  backgroundColor: 'transparent',
+  textStyle: { fontFamily: 'PingFang SC, Microsoft YaHei, sans-serif', color: '#303133' },
+  title: { textStyle: { fontSize: 14, fontWeight: 600, color: '#303133' } },
+  legend: { textStyle: { color: '#606266', fontSize: 12 } },
+  tooltip: {
+    backgroundColor: 'rgba(255,255,255,.96)',
+    borderColor: '#e4e7ed',
+    borderWidth: 1,
+    textStyle: { color: '#303133', fontSize: 12 },
+    extraCssText: 'box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: 6px;'
+  },
+  categoryAxis: {
+    axisLine: { lineStyle: { color: '#dcdfe6' } },
+    axisTick: { show: false },
+    axisLabel: { color: '#606266', fontSize: 11 },
+    splitLine: { show: false }
+  },
+  valueAxis: {
+    axisLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { color: '#606266', fontSize: 11 },
+    splitLine: { lineStyle: { color: '#ebeef5', type: 'dashed' } }
+  }
+})
+
+export default echarts

@@ -49,7 +49,7 @@ const renovationOptions = [
 onMounted(async () => {
   try {
     await store.loadMeta()
-  } catch (e) {
+  } catch {
     // 错误已由 axios 拦截器提示
   } finally {
     metaLoading.value = false
@@ -69,7 +69,7 @@ async function submit() {
     try {
       result.value = await predict({ ...form })
       ElMessage.success('预测完成')
-    } catch (e) {
+    } catch {
       // 拦截器已提示
     } finally {
       loading.value = false

@@ -20,7 +20,7 @@ async function load() {
     dist.value = d
     corr.value = c
     importance.value = i
-  } catch (e) {
+  } catch {
     loadError.value = true
   } finally {
     loading.value = false

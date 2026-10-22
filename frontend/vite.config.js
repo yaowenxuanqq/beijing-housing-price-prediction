@@ -1,8 +1,15 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    AutoImport({ resolvers: [ElementPlusResolver()], dts: false }),
+    Components({ resolvers: [ElementPlusResolver()], dts: false })
+  ],
   server: {
     host: '127.0.0.1',
     port: 5173,
@@ -15,11 +22,11 @@ export default defineConfig({
       output: {
         manualChunks: {
           vue: ['vue', 'vue-router', 'pinia'],
-          element: ['element-plus'],
-          echarts: ['echarts'],
+          echarts: ['echarts/core', 'echarts/charts', 'echarts/components', 'echarts/renderers'],
           axios: ['axios']
         }
       }
-    }
+    },
+    chunkSizeWarningLimit: 900
   }
 })

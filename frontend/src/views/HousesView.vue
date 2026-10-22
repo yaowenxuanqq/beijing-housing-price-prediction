@@ -94,7 +94,7 @@ function openDetail(row) {
 }
 
 onMounted(async () => {
-  try { districts.value = (await fetchMetaOptions()).districts } catch (e) {}
+  try { districts.value = (await fetchMetaOptions()).districts } catch { districts.value = [] }
   readQuery()
   await load()
 })

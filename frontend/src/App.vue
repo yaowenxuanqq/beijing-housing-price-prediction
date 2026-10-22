@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 
 const router = useRouter()
 const loading = ref(false)
@@ -15,10 +16,12 @@ router.afterEach(() => {
 </script>
 
 <template>
-  <div v-if="loading" class="route-progress">
-    <div class="route-progress-bar" />
-  </div>
-  <router-view />
+  <el-config-provider :locale="zhCn">
+    <div v-if="loading" class="route-progress">
+      <div class="route-progress-bar" />
+    </div>
+    <router-view />
+  </el-config-provider>
 </template>
 
 <style>

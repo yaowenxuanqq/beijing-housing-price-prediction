@@ -28,7 +28,7 @@ async function load() {
     districts.value = d
     heatmap.value = h
     yearly.value = y
-  } catch (e) {
+  } catch {
     loadError.value = true
   } finally {
     loading.value = false
