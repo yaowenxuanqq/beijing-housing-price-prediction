@@ -1,0 +1,5 @@
+export const fmtNumber = v => (v == null ? '-' : Number(v).toLocaleString('zh-CN'))
+export const fmtWan = v => (v == null ? '-' : Number(v).toLocaleString('zh-CN', { maximumFractionDigits: 1 }) + ' 万')
+export const fmtPrice = v => (v == null ? '-' : fmtNumber(Math.round(v)) + ' 元/㎡')
+export const fmtPct = v => (v == null ? '-' : Number(v).toFixed(2) + '%')
+export const fmtR2 = v => (v == null ? '-' : Number(v).toFixed(4))

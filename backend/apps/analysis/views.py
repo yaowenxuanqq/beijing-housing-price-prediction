@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from django.conf import settings
 from django.db.models import Avg, Count, Max, Min
@@ -50,6 +51,45 @@ class DistrictStatsView(APIView):
 
 
 _CORR_CACHE = None
+
+
+class YearlyStatsView(APIView):
+    """年度成交量与均价"""
+
+    def get(self, request):
+        rows = (House.objects.values("trade_date__year")
+                .annotate(count=Count("id"),
+                          avg_unit_price=Avg("unit_price"),
+                          avg_total_price=Avg("total_price"))
+                .order_by("trade_date__year"))
+        return Response([{
+            "year": r["trade_date__year"],
+            "count": r["count"],
+            "avg_unit_price": round(r["avg_unit_price"], 0),
+            "avg_total_price": round(r["avg_total_price"], 1),
+        } for r in rows])
+
+
+class DistributionView(APIView):
+    """总价分布直方图 + 面积-总价散点（随机抽样 3000）"""
+
+    def get(self, request):
+        rows = list(House.objects.order_by("?").values("total_price", "square", "unit_price")[:3000])
+        if not rows:
+            return Response({"histogram": {"bins": [], "counts": []}, "scatter": []})
+        df = pd.DataFrame(rows)
+        counts, bins = np.histogram(df["total_price"].to_numpy(), bins=30)
+        return Response({
+            "histogram": {
+                "bins": [round(float(b), 1) for b in bins],
+                "counts": [int(c) for c in counts],
+            },
+            "scatter": [{
+                "square": float(r["square"]),
+                "total_price": float(r["total_price"]),
+                "unit_price": float(r["unit_price"]),
+            } for r in rows],
+        })
 
 
 class CorrelationView(APIView):

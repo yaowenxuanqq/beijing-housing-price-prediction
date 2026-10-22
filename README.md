@@ -77,6 +77,8 @@
 
 ```
 beijing-housing-price-prediction/
+├── backend/               # Django 后端（API + Admin + SQLite）
+├── frontend/              # Vue 3 + Element Plus + ECharts 前端
 ├── backend/ml/            # 特征工程、评估指标（训练/推理共用）
 ├── data/                  # 数据集与实验产物（大数据文件不入库）
 ├── docs/                  # 项目文档 + figures/ 图表

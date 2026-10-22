@@ -66,7 +66,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "apps.housing.pagination.StandardPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
 }

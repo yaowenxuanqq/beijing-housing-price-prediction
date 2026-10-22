@@ -1,0 +1,15 @@
+import { client } from './client'
+
+export const fetchHealth = () => client.get('/health/').then(r => r.data)
+export const fetchOverview = () => client.get('/stats/overview/').then(r => r.data)
+export const fetchDistrictStats = () => client.get('/stats/district/').then(r => r.data)
+export const fetchCorrelation = () => client.get('/stats/correlation/').then(r => r.data)
+export const fetchImportance = () => client.get('/stats/importance/').then(r => r.data)
+export const fetchHeatmap = (limit = 5000) => client.get('/stats/heatmap/', { params: { limit } }).then(r => r.data)
+export const fetchYearlyStats = () => client.get('/stats/yearly/').then(r => r.data)
+export const fetchDistribution = () => client.get('/stats/distribution/').then(r => r.data)
+export const fetchMetaOptions = () => client.get('/meta/options/').then(r => r.data)
+export const fetchModelMetrics = () => client.get('/models/metrics/').then(r => r.data)
+export const fetchHouses = (params) => client.get('/houses/', { params }).then(r => r.data)
+export const fetchHouse = (id) => client.get(`/houses/${id}/`).then(r => r.data)
+export const predict = (payload) => client.post('/predict/', payload).then(r => r.data)
