@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent          # backend/
 PROJECT_ROOT = BASE_DIR.parent                             # 项目根目录
 
 SECRET_KEY = config("DJANGO_SECRET_KEY", default="dev-insecure-key-change-me")
-DEBUG = config("DJANGO_DEBUG", default=True, cast=bool)
+DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", default="127.0.0.1,localhost", cast=Csv())
 
 INSTALLED_APPS = [
@@ -63,7 +63,12 @@ USE_TZ = False
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = config("CORS_ALLOW_ALL_ORIGINS", default=False, cast=bool)
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS",
+    default="http://127.0.0.1:5173,http://localhost:5173",
+    cast=Csv(),
+)
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "apps.housing.pagination.StandardPagination",

@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from django.conf import settings
 from django.db.models import Avg, Count, Max, Min
+from django.utils import timezone
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,8 +16,38 @@ from ml.predictor import HousingPredictor
 
 
 class HealthView(APIView):
+    """数据库与模型服务的联合健康检查。"""
+
     def get(self, request):
-        return Response({"status": "ok", "houses": House.objects.count()})
+        checked_at = timezone.now()
+        database_ready = True
+        model_ready = False
+        houses = None
+        model = None
+        error = None
+        try:
+            houses = House.objects.count()
+        except Exception as exc:
+            database_ready = False
+            error = f"database: {type(exc).__name__}"
+        try:
+            if database_ready:
+                model = HousingPredictor.instance().metadata()
+                model_ready = True
+        except Exception as exc:
+            error = f"model: {type(exc).__name__}"
+
+        payload = {
+            "status": "ok" if database_ready and model_ready else "degraded",
+            "database": {"ready": database_ready, "houses": houses},
+            "model": {"ready": model_ready, **(model or {})},
+            "error": error,
+            "checked_at": checked_at,
+        }
+        return Response(
+            payload,
+            status=status.HTTP_200_OK if database_ready and model_ready else status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
 
 
 class OverviewView(APIView):

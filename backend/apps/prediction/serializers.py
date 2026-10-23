@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from rest_framework import serializers
 
+from .models import PredictionLog
+
 FLOOR_CHOICES = ["低", "中", "高", "顶", "底", "未知"]
 
 # 区名白名单缓存（数据静态，进程内缓存一次）
@@ -45,3 +47,9 @@ class PredictRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 f"未知区域：{value}，可选值为 {sorted(valid)}")
         return value
+
+
+class PredictionLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PredictionLog
+        fields = "__all__"

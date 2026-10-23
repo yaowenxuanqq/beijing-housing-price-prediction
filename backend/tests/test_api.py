@@ -92,3 +92,52 @@ class ApiSmokeTests(TestCase):
         self.assertIn("leakage_fields", data)
         self.assertIn("community_average", data["leakage_fields"])
         self.assertEqual(len(data["fields"]), len(data["matrix"]))
+    def test_health_returns_model_metadata(self):
+        r = self.client.get("/api/v1/health/")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["status"], "ok")
+        self.assertTrue(data["database"]["ready"])
+        self.assertTrue(data["model"]["ready"])
+        self.assertEqual(data["database"]["houses"], 120)
+        self.assertTrue(data["model"]["model_sha256"])
+
+    def test_predict_explain_returns_shap_features(self):
+        r = self.client.post("/api/v1/predict/explain/", self.payload(), format="json")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["explanation"]["method"], "TreeSHAP")
+        self.assertGreater(len(data["explanation"]["features"]), 0)
+        self.assertIn("contribution_unit_price", data["explanation"]["features"][0])
+        self.assertTrue(data["request_id"])
+
+    def test_similar_houses_returns_ranked_candidates(self):
+        r = self.client.get("/api/v1/houses/similar/", {
+            "district_name": "朝阳区", "square": 89.5, "rooms": 2,
+            "floor_position": "中", "subway": True, "elevator": True, "limit": 5,
+        })
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertGreater(len(data["results"]), 0)
+        self.assertLessEqual(len(data["results"]), 5)
+        self.assertGreaterEqual(data["results"][0]["similarity_score"], 0)
+        self.assertIn("match_reasons", data["results"][0])
+
+    def test_prediction_history_and_export(self):
+        prediction = self.client.post("/api/v1/predict/", self.payload(), format="json")
+        self.assertEqual(prediction.status_code, 200)
+        history = self.client.get("/api/v1/predictions/")
+        self.assertEqual(history.status_code, 200)
+        self.assertEqual(history.json()["count"], 1)
+        export = self.client.get("/api/v1/predictions/export/")
+        self.assertEqual(export.status_code, 200)
+        self.assertIn("text/csv", export["Content-Type"])
+        self.assertIn("request_id", export.content.decode("utf-8-sig"))
+
+    def test_current_model_returns_runtime_stats(self):
+        r = self.client.get("/api/v1/models/current/")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertTrue(data["ready"])
+        self.assertEqual(data["model"]["model_class"], "RandomForestRegressor")
+        self.assertIn("prediction_count", data["runtime"])

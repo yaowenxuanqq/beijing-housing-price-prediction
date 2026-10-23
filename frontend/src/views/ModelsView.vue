@@ -3,11 +3,12 @@ import { computed, onMounted, ref } from 'vue'
 import ChartCard from '../components/ChartCard.vue'
 import PageHeader from '../components/PageHeader.vue'
 import BaseChart from '../components/BaseChart.vue'
-import { fetchModelMetrics } from '../api/endpoints'
+import { fetchCurrentModel, fetchModelMetrics } from '../api/endpoints'
 import { useAsync } from '../composables/useAsync'
 import { fmtNumber, fmtR2, fmtPct } from '../utils/format'
 
 const experiment = ref('ES3_time_ratio')
+const modelInfo = ref(null)
 const { data: metrics, loading, run: loadMetrics } = useAsync(fetchModelMetrics)
 
 const experiments = [
@@ -37,7 +38,14 @@ const experimentMeta = computed(() => {
   return null
 })
 
-onMounted(loadMetrics)
+onMounted(async () => {
+  loadMetrics()
+  try {
+    modelInfo.value = await fetchCurrentModel()
+  } catch {
+    modelInfo.value = null
+  }
+})
 
 const baseExp = computed(() => metrics.value?.baseline?.experiments?.find(e => e.experiment === experiment.value))
 
@@ -110,6 +118,21 @@ const stability = computed(() => metrics.value?.stability)
       </template>
     </PageHeader>
 
+    <section v-if="modelInfo" class="model-status card mt-16">
+      <div class="status-main">
+        <div class="status-orb" :class="{ ready: modelInfo.ready }"></div>
+        <div>
+          <div class="status-title">{{ modelInfo.ready ? '模型服务就绪' : '模型服务未就绪' }}</div>
+          <div class="muted">{{ modelInfo.model?.model_class }} · {{ modelInfo.model?.n_estimators }} 棵树 · {{ modelInfo.model?.feature_count }} 个特征</div>
+        </div>
+      </div>
+      <div class="status-grid">
+        <div><span>模型版本</span><b>{{ modelInfo.model?.model_version || '-' }}</b></div>
+        <div><span>累计估价</span><b class="num">{{ fmtNumber(modelInfo.runtime?.prediction_count || 0) }} 次</b></div>
+        <div><span>平均耗时</span><b class="num">{{ modelInfo.runtime?.avg_duration_ms == null ? '-' : Number(modelInfo.runtime.avg_duration_ms).toFixed(0) + ' ms' }}</b></div>
+        <div><span>文件指纹</span><b class="mono">{{ modelInfo.model?.model_sha256 ? modelInfo.model.model_sha256.slice(0, 12) : '-' }}</b></div>
+      </div>
+    </section>
     <div class="toolbar card">
       <el-radio-group v-model="experiment">
         <el-radio-button v-for="e in experiments" :key="e.value" :value="e.value">{{ e.label }}</el-radio-button>
@@ -200,4 +223,14 @@ const stability = computed(() => metrics.value?.stability)
 .pm { font-size: 15px; color: var(--text-secondary); font-weight: 500; }
 .up { color: #67c23a; font-weight: 600; }
 .down { color: #f56c6c; font-weight: 600; }
+.model-status { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.status-main { display: flex; align-items: center; gap: 12px; }
+.status-orb { width: 12px; height: 12px; border-radius: 50%; background: #e6a23c; box-shadow: 0 0 0 5px rgba(230,162,60,.12); }
+.status-orb.ready { background: #67c23a; box-shadow: 0 0 0 5px rgba(103,194,58,.12); }
+.status-title { font-size: 14px; font-weight: 650; margin-bottom: 3px; }
+.status-grid { display: flex; gap: 24px; flex-wrap: wrap; }
+.status-grid > div { display: flex; flex-direction: column; gap: 3px; }
+.status-grid span { font-size: 11px; color: var(--text-muted); }
+.status-grid b { font-size: 13px; }
+.mono { font-family: var(--font-mono, Consolas, monospace); }
 </style>

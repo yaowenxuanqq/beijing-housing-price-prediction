@@ -3,14 +3,19 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '../components/PageHeader.vue'
 import { useAppStore } from '../stores/app'
-import { predict } from '../api/endpoints'
+import { explainPrediction, fetchSimilarHouses } from '../api/endpoints'
 import { fmtNumber } from '../utils/format'
 
 const store = useAppStore()
 const formRef = ref()
 const loading = ref(false)
 const metaLoading = ref(true)
+const similarLoading = ref(false)
+const similarError = ref(false)
 const result = ref(null)
+const explanation = ref(null)
+const similar = ref([])
+const similarCriteria = ref(null)
 
 const form = reactive({
   district_name: '',
@@ -67,13 +72,39 @@ async function submit() {
   await formRef.value.validate(async valid => {
     if (!valid) return
     loading.value = true
+    similarLoading.value = true
+    similarError.value = false
+    explanation.value = null
+    similar.value = []
     try {
-      result.value = await predict({ ...form })
-      ElMessage.success('预测完成')
-    } catch {
-      // 拦截器已提示
+      const payload = { ...form }
+      const similarPayload = {
+        district_name: form.district_name,
+        square: form.square,
+        rooms: form.rooms,
+        floor_position: form.floor_position,
+        subway: form.subway,
+        elevator: form.elevator,
+        limit: 6
+      }
+      const [predictionResult, similarResult] = await Promise.allSettled([
+        explainPrediction(payload),
+        fetchSimilarHouses(similarPayload)
+      ])
+      if (predictionResult.status === 'rejected') return
+
+      result.value = predictionResult.value
+      explanation.value = predictionResult.value.explanation || null
+      if (similarResult.status === 'fulfilled') {
+        similar.value = similarResult.value.results || []
+        similarCriteria.value = similarResult.value.criteria || null
+      } else {
+        similarError.value = true
+      }
+      ElMessage.success('估价与解释生成完成')
     } finally {
       loading.value = false
+      similarLoading.value = false
     }
   })
 }
@@ -81,25 +112,55 @@ async function submit() {
 function reset() {
   formRef.value?.resetFields()
   result.value = null
+  explanation.value = null
+  similar.value = []
+  similarCriteria.value = null
+  similarError.value = false
 }
 
 function applyPreset(preset) {
   Object.assign(form, preset.values)
   result.value = null
+  explanation.value = null
+  similar.value = []
+  similarCriteria.value = null
+  similarError.value = false
 }
 
 const gaugeLeft = computed(() => {
   const r = Number(result.value?.ratio || 1)
   return Math.max(0, Math.min(100, ((r - 0.7) / 0.6) * 100))
 })
+
+const maxFactor = computed(() => {
+  const values = (explanation.value?.features || []).map(x => Math.abs(Number(x.contribution_unit_price || 0)))
+  return Math.max(1, ...values)
+})
+
+function factorWidth(value) {
+  return Math.max(6, Math.abs(Number(value || 0)) / maxFactor.value * 100) + '%'
+}
+
+function factorTone(value) {
+  return Number(value || 0) >= 0 ? 'positive' : 'negative'
+}
+
+function signedPrice(value) {
+  const number = Number(value || 0)
+  return (number >= 0 ? '+' : '') + fmtNumber(Math.round(number)) + ' 元/㎡'
+}
+
+function formatReason(row) {
+  return (row.match_reasons || []).join(' · ')
+}
 </script>
 
 <template>
   <div class="page">
     <PageHeader
       title="房价预测"
-      description="输入房屋特征与当期区域行情，输出相对行情估值、折算总价及 80% 时序交叉验证校准区间。"
-      eyebrow="Prediction · 智能估值"
+      description="输入房屋特征与当期区域行情，输出相对行情估值、价格区间、模型解释与相似历史成交。"
+      eyebrow="Prediction · 可解释估价"
     >
       <template #actions>
         <el-tag type="success" effect="plain" round>{{ store.modelVersion }}</el-tag>
@@ -189,7 +250,7 @@ const gaugeLeft = computed(() => {
           </el-form-item>
 
           <el-form-item>
-            <el-button type="primary" :loading="loading" @click="submit">开始预测</el-button>
+            <el-button type="primary" :loading="loading" @click="submit">开始估价</el-button>
             <el-button @click="reset">重置</el-button>
           </el-form-item>
         </el-form>
@@ -198,8 +259,8 @@ const gaugeLeft = computed(() => {
       <section class="result-wrap">
         <div v-if="!result" class="card result-empty">
           <div class="empty-icon">✦</div>
-          <div>填写左侧信息后点击「开始预测」</div>
-          <div class="muted">系统将输出相对行情估值与折算总价</div>
+          <div>填写左侧信息后点击「开始估价」</div>
+          <div class="muted">系统将输出估价、模型解释与相似成交案例</div>
         </div>
         <div v-else class="card result-card">
           <div class="result-label">预测单价</div>
@@ -235,6 +296,74 @@ const gaugeLeft = computed(() => {
         </div>
       </section>
     </div>
+
+    <section v-if="explanation" class="card explanation-card mt-16">
+      <div class="section-head">
+        <div>
+          <h3 class="card-title">为什么是这个价格？</h3>
+          <div class="muted">TreeSHAP 局部贡献 · 以当期区中位单价为换算基准</div>
+        </div>
+        <el-tag type="info" effect="plain">{{ explanation.method }}</el-tag>
+      </div>
+      <div class="explain-base">
+        模型基准估值 <b class="num">{{ fmtNumber(explanation.base_unit_price) }} 元/㎡</b>
+        <span class="muted">，当前估价相对基准 {{ explanation.predicted_ratio >= explanation.base_ratio ? '上浮' : '下调' }}</span>
+      </div>
+      <div class="factor-list">
+        <div v-for="item in explanation.features" :key="item.feature" class="factor-row">
+          <div class="factor-name">
+            <b>{{ item.label }}</b>
+            <small>{{ item.value }}</small>
+          </div>
+          <div class="factor-track">
+            <div class="factor-bar" :class="factorTone(item.contribution_unit_price)" :style="{ width: factorWidth(item.contribution_unit_price) }"></div>
+          </div>
+          <div class="factor-value" :class="factorTone(item.contribution_unit_price)">
+            {{ signedPrice(item.contribution_unit_price) }}
+          </div>
+        </div>
+      </div>
+      <div class="explain-note">{{ explanation.method_note }}</div>
+    </section>
+
+    <section class="card mt-16" v-if="result">
+      <div class="section-head">
+        <div>
+          <h3 class="card-title">相似历史成交</h3>
+          <div class="muted" v-if="similarCriteria">
+            同区域 · 面积上下 30% · 近两年优先 · 候选 {{ similarCriteria.candidate_count }} 条
+          </div>
+        </div>
+        <el-tag type="success" effect="plain" round>{{ similar.length }} 条参考</el-tag>
+      </div>
+      <el-skeleton v-if="similarLoading" :rows="4" animated />
+      <div v-else-if="similarError" class="section-error">相似成交加载失败，不影响本次估价。</div>
+      <el-table v-else :data="similar" size="small" stripe>
+        <el-table-column prop="district_name" label="区域" width="90" />
+        <el-table-column prop="trade_date" label="成交日期" width="110" />
+        <el-table-column label="面积" width="100" align="right">
+          <template #default="{ row }">{{ Number(row.square).toFixed(1) }}㎡</template>
+        </el-table-column>
+        <el-table-column label="总价" width="110" align="right">
+          <template #default="{ row }">{{ fmtNumber(row.total_price) }} 万</template>
+        </el-table-column>
+        <el-table-column label="单价" width="130" align="right">
+          <template #default="{ row }">{{ fmtNumber(Math.round(row.unit_price)) }} 元/㎡</template>
+        </el-table-column>
+        <el-table-column label="相似度" width="90" align="center">
+          <template #default="{ row }"><el-tag type="success" effect="plain">{{ row.similarity_score }}</el-tag></template>
+        </el-table-column>
+        <el-table-column label="匹配原因" min-width="220">
+          <template #default="{ row }">{{ formatReason(row) }}</template>
+        </el-table-column>
+        <el-table-column label="来源" width="80" align="center">
+          <template #default="{ row }">
+            <a v-if="row.url" :href="row.url" target="_blank" rel="noreferrer">查看</a>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+      </el-table>
+    </section>
   </div>
 </template>
 
@@ -263,8 +392,30 @@ const gaugeLeft = computed(() => {
 .gauge-zone { position: absolute; left: 33.3%; width: 33.3%; height: 100%; background: #c9dcff; border-radius: 3px; }
 .gauge-marker { position: absolute; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--color-primary); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.2); transform: translateX(-6px); transition: left .4s ease; }
 .gauge-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--text-muted); }
+.explanation-card { background: linear-gradient(155deg, #fff 0%, #f8fbff 100%); }
+.section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.explain-base { margin: 16px 0 12px; padding: 10px 12px; border-radius: 8px; background: #eef5ff; color: var(--text-secondary); font-size: 13px; }
+.factor-list { display: flex; flex-direction: column; gap: 10px; }
+.factor-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 150px; gap: 12px; align-items: center; font-size: 12px; }
+.factor-name { display: flex; flex-direction: column; gap: 2px; }
+.factor-name small { color: var(--text-muted); font-size: 11px; }
+.factor-track { height: 12px; background: #eef1f6; border-radius: 6px; overflow: hidden; }
+.factor-bar { height: 100%; min-width: 6px; border-radius: 6px; }
+.factor-bar.positive { background: linear-gradient(90deg, #79b8ff, #2f6fed); }
+.factor-bar.negative { background: linear-gradient(90deg, #f2a0a0, #e15b64); }
+.factor-value { text-align: right; font-weight: 650; }
+.factor-value.positive { color: #2457c8; }
+.factor-value.negative { color: #c84f5d; }
+.explain-note { margin-top: 14px; color: var(--text-muted); font-size: 11px; line-height: 1.6; }
+.section-error { padding: 22px 0; text-align: center; color: var(--color-danger); font-size: 13px; }
 @media (max-width: 1000px) {
   .predict-grid { grid-template-columns: 1fr; }
   .result-wrap { position: static; }
+  .factor-row { grid-template-columns: 110px minmax(0, 1fr) 120px; gap: 8px; }
+}
+@media (max-width: 640px) {
+  .factor-row { grid-template-columns: 90px minmax(0, 1fr); }
+  .factor-value { grid-column: 2; text-align: left; }
+  .section-head { flex-direction: column; }
 }
 </style>

@@ -11,6 +11,7 @@ const routes = [
       { path: 'analysis', name: 'analysis', component: () => import('../views/AnalysisView.vue'), meta: { title: '可视化分析' } },
       { path: 'models', name: 'models', component: () => import('../views/ModelsView.vue'), meta: { title: '模型对比' } },
       { path: 'predict', name: 'predict', component: () => import('../views/PredictView.vue'), meta: { title: '房价预测' } },
+      { path: 'predictions', name: 'predictions', component: () => import('../views/PredictionHistoryView.vue'), meta: { title: '预测记录' } },
       { path: ':pathMatch(.*)*', name: 'notfound', component: () => import('../views/NotFoundView.vue'), meta: { title: '404' } }
     ]
   }
