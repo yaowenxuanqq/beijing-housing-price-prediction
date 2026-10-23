@@ -18,3 +18,10 @@ export const predict = (payload) => client.post('/predict/', payload).then(r => 
 export const explainPrediction = (payload) => client.post('/predict/explain/', payload).then(r => r.data)
 export const fetchPredictionHistory = (params) => client.get('/predictions/', { params }).then(r => r.data)
 export const fetchPredictionExport = (params) => client.get('/predictions/export/', { params, responseType: 'blob' }).then(r => r.data)
+export const runScenarioAnalysis = (payload) => client.post('/predict/scenarios/', payload).then(r => r.data)
+export const uploadBatchPredictions = (file) => {
+  const data = new FormData()
+  data.append('file', file)
+  return client.post('/predict/batch/', data, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data)
+}
+export const fetchBatchTemplate = () => client.get('/predict/batch/template/', { responseType: 'blob' }).then(r => r.data)

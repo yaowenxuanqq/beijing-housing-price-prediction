@@ -103,6 +103,25 @@ const compareOption = computed(() => {
   }
 })
 
+
+const runtimeOption = computed(() => {
+  const daily = modelInfo.value?.runtime?.recent_daily || []
+  return {
+    grid: { left: 46, right: 48, top: 34, bottom: 32 },
+    tooltip: { trigger: 'axis' },
+    legend: { top: 0 },
+    xAxis: { type: 'category', data: daily.map(x => x.date.slice(5)) },
+    yAxis: [
+      { type: 'value', name: '次数', minInterval: 1 },
+      { type: 'value', name: 'ms', axisLabel: { formatter: v => Math.round(v) } }
+    ],
+    series: [
+      { name: '估价次数', type: 'bar', data: daily.map(x => x.count), barWidth: 16, itemStyle: { color: '#2f6fed', borderRadius: [4, 4, 0, 0] } },
+      { name: '平均耗时', type: 'line', yAxisIndex: 1, data: daily.map(x => x.avg_duration_ms), symbolSize: 6, lineStyle: { color: '#e6a23c' }, itemStyle: { color: '#e6a23c' } }
+    ]
+  }
+})
+
 const stability = computed(() => metrics.value?.stability)
 </script>
 
@@ -130,9 +149,14 @@ const stability = computed(() => metrics.value?.stability)
         <div><span>模型版本</span><b>{{ modelInfo.model?.model_version || '-' }}</b></div>
         <div><span>累计估价</span><b class="num">{{ fmtNumber(modelInfo.runtime?.prediction_count || 0) }} 次</b></div>
         <div><span>平均耗时</span><b class="num">{{ modelInfo.runtime?.avg_duration_ms == null ? '-' : Number(modelInfo.runtime.avg_duration_ms).toFixed(0) + ' ms' }}</b></div>
+        <div><span>近 7 天</span><b class="num">{{ fmtNumber(modelInfo.runtime?.prediction_count_7d || 0) }} 次</b></div>
+        <div><span>P95 耗时</span><b class="num">{{ modelInfo.runtime?.latency_p95_ms == null ? '-' : Number(modelInfo.runtime.latency_p95_ms).toFixed(0) + ' ms' }}</b></div>
         <div><span>文件指纹</span><b class="mono">{{ modelInfo.model?.model_sha256 ? modelInfo.model.model_sha256.slice(0, 12) : '-' }}</b></div>
       </div>
     </section>
+    <ChartCard v-if="modelInfo" title="近 7 天估价运行趋势" :loading="!modelInfo" :empty="!(modelInfo.runtime?.recent_daily || []).length" class="mt-16">
+      <BaseChart :option="runtimeOption" height="250px" />
+    </ChartCard>
     <div class="toolbar card">
       <el-radio-group v-model="experiment">
         <el-radio-button v-for="e in experiments" :key="e.value" :value="e.value">{{ e.label }}</el-radio-button>

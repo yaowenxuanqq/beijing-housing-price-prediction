@@ -20,6 +20,7 @@ const groups = [
     items: [
       { path: '/models', label: '模型对比', icon: '◎' },
       { path: '/predict', label: '房价预测', icon: '✦' },
+      { path: '/batch', label: '批量估价', icon: '⇪' },
       { path: '/predictions', label: '预测记录', icon: '◷' }
     ]
   }
@@ -59,7 +60,7 @@ function refresh() { window.location.reload() }
       <div class="sidebar-footer">
         <div>数据区间 2011 – 2017</div>
         <div>317,718 条成交记录</div>
-        <div class="sidebar-version">System v1.7 · Model v2</div>
+        <div class="sidebar-version">System v1.8 · Model v2</div>
       </div>
     </aside>
 

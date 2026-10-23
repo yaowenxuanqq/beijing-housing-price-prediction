@@ -7,7 +7,16 @@ from django.db import models
 class PredictionLog(models.Model):
     """预测记录（用于追溯、导出与展示）"""
 
+    SOURCE_CHOICES = [
+        ("single", "单条估价"),
+        ("explain", "可解释估价"),
+        ("scenario", "情景对比"),
+        ("batch", "批量估价"),
+    ]
+
     request_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    source = models.CharField(max_length=16, choices=SOURCE_CHOICES, default="single", db_index=True)
+    batch_id = models.UUIDField(null=True, blank=True, db_index=True)
     input_json = models.JSONField()
     predicted_ratio = models.FloatField(null=True)
     predicted_unit_price = models.FloatField(null=True)

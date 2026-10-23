@@ -3,6 +3,7 @@
 
 from datetime import date
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -141,3 +142,51 @@ class ApiSmokeTests(TestCase):
         self.assertTrue(data["ready"])
         self.assertEqual(data["model"]["model_class"], "RandomForestRegressor")
         self.assertIn("prediction_count", data["runtime"])
+    def test_scenario_analysis_returns_deltas(self):
+        payload = {
+            "base": self.payload(),
+            "scenarios": [
+                {"name": "有电梯", "changes": {"elevator": True}},
+                {"name": "面积增加10㎡", "changes": {"square": 99.5}},
+            ],
+        }
+        r = self.client.post("/api/v1/predict/scenarios/", payload, format="json")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["baseline"]["name"], "当前方案")
+        self.assertEqual(len(data["scenarios"]), 2)
+        self.assertIn("delta_total_price", data["scenarios"][1])
+        self.assertTrue(data["batch_id"])
+
+    def test_batch_predict_accepts_csv(self):
+        csv_text = (
+            "district_name,square,rooms,halls,bathrooms,floor_position,total_floors,house_age,"
+            "renovation,building_type,building_structure,ladder_ratio,elevator,subway,five_years,"
+            "market_median_unit_price\n"
+            "朝阳区,89.5,2,1,1,中,18,12,3,1,2,2,true,true,true,66421\n"
+            "朝阳区,70,2,1,1,中,12,10,2,1,2,2,false,true,true,66421\n"
+        )
+        upload = SimpleUploadedFile("houses.csv", csv_text.encode("utf-8-sig"), content_type="text/csv")
+        r = self.client.post("/api/v1/predict/batch/", {"file": upload}, format="multipart")
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["total"], 2)
+        self.assertEqual(data["success"], 2)
+        self.assertEqual(data["failed"], 0)
+        self.assertIn("predicted_total_price", data["results"][0])
+        self.assertEqual(data["results"][0]["input_json"]["district_name"], "朝阳区")
+
+    def test_batch_template_is_csv(self):
+        r = self.client.get("/api/v1/predict/batch/template/")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("text/csv", r["Content-Type"])
+        self.assertIn("district_name", r.content.decode("utf-8-sig"))
+
+    def test_current_model_runtime_has_latency_and_daily(self):
+        self.client.post("/api/v1/predict/", self.payload(), format="json")
+        r = self.client.get("/api/v1/models/current/")
+        self.assertEqual(r.status_code, 200)
+        runtime = r.json()["runtime"]
+        self.assertIn("latency_p50_ms", runtime)
+        self.assertIn("source_counts", runtime)
+        self.assertEqual(len(runtime["recent_daily"]), 7)

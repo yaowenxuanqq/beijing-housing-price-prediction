@@ -13,7 +13,7 @@ const pageSize = ref(20)
 const drawer = ref(false)
 const detail = ref(null)
 const exporting = ref(false)
-const filters = reactive({ model_version: '', date_from: '', date_to: '' })
+const filters = reactive({ model_version: '', source: '', date_from: '', date_to: '' })
 
 function queryParams() {
   const params = { page: page.value, page_size: pageSize.value }
@@ -41,6 +41,7 @@ function search() {
 
 function reset() {
   filters.model_version = ''
+  filters.source = ''
   filters.date_from = ''
   filters.date_to = ''
   page.value = 1
@@ -98,6 +99,12 @@ onMounted(load)
 
     <section class="card filter-bar">
       <el-input v-model="filters.model_version" clearable placeholder="模型版本" style="width: 190px" />
+      <el-select v-model="filters.source" clearable placeholder="记录来源" style="width: 130px">
+        <el-option label="单条估价" value="single" />
+        <el-option label="可解释估价" value="explain" />
+        <el-option label="情景对比" value="scenario" />
+        <el-option label="批量估价" value="batch" />
+      </el-select>
       <el-date-picker v-model="filters.date_from" type="date" value-format="YYYY-MM-DD" placeholder="开始日期" style="width: 150px" />
       <el-date-picker v-model="filters.date_to" type="date" value-format="YYYY-MM-DD" placeholder="结束日期" style="width: 150px" />
       <el-button type="primary" @click="search">查询</el-button>
@@ -111,6 +118,9 @@ onMounted(load)
         </el-table-column>
         <el-table-column label="时间" width="170">
           <template #default="{ row }">{{ formatTime(row.created_at) }}</template>
+        </el-table-column>
+        <el-table-column label="来源" width="105">
+          <template #default="{ row }"><el-tag size="small" effect="plain">{{ { single: '单条', explain: '解释', scenario: '情景', batch: '批量' }[row.source] || row.source }}</el-tag></template>
         </el-table-column>
         <el-table-column label="区域" width="95">
           <template #default="{ row }">{{ row.input_json?.district_name || '-' }}</template>
@@ -150,6 +160,8 @@ onMounted(load)
         <el-descriptions :column="1" border>
           <el-descriptions-item label="请求编号"><span class="mono">{{ detail.request_id }}</span></el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ formatTime(detail.created_at) }}</el-descriptions-item>
+          <el-descriptions-item label="记录来源">{{ { single: '单条估价', explain: '可解释估价', scenario: '情景对比', batch: '批量估价' }[detail.source] || detail.source }}</el-descriptions-item>
+          <el-descriptions-item label="批次编号"><span class="mono">{{ detail.batch_id || '-' }}</span></el-descriptions-item>
           <el-descriptions-item label="模型版本">{{ detail.model_version }}</el-descriptions-item>
           <el-descriptions-item label="预测单价">{{ fmtNumber(detail.predicted_unit_price) }} 元/㎡</el-descriptions-item>
           <el-descriptions-item label="预测总价">{{ fmtNumber(detail.predicted_total_price) }} 万元</el-descriptions-item>

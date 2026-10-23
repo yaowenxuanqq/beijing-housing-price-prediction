@@ -53,3 +53,15 @@ class PredictionLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = PredictionLog
         fields = "__all__"
+class ScenarioItemSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=32)
+    changes = serializers.DictField(required=False, default=dict)
+
+
+class ScenarioRequestSerializer(serializers.Serializer):
+    base = serializers.DictField()
+    scenarios = serializers.ListField(
+        child=ScenarioItemSerializer(),
+        min_length=1,
+        max_length=8,
+    )

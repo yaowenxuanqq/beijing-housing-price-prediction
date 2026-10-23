@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '../components/PageHeader.vue'
 import { useAppStore } from '../stores/app'
-import { explainPrediction, fetchSimilarHouses } from '../api/endpoints'
+import { explainPrediction, fetchSimilarHouses, runScenarioAnalysis } from '../api/endpoints'
 import { fmtNumber } from '../utils/format'
 
 const store = useAppStore()
@@ -16,6 +16,10 @@ const result = ref(null)
 const explanation = ref(null)
 const similar = ref([])
 const similarCriteria = ref(null)
+const scenarioLoading = ref(false)
+const scenarioError = ref(false)
+const scenarioResult = ref(null)
+const scenarioSelection = ref(['age', 'area'])
 
 const form = reactive({
   district_name: '',
@@ -116,6 +120,7 @@ function reset() {
   similar.value = []
   similarCriteria.value = null
   similarError.value = false
+  scenarioResult.value = null
 }
 
 function applyPreset(preset) {
@@ -125,11 +130,28 @@ function applyPreset(preset) {
   similar.value = []
   similarCriteria.value = null
   similarError.value = false
+  scenarioResult.value = null
 }
 
 const gaugeLeft = computed(() => {
   const r = Number(result.value?.ratio || 1)
   return Math.max(0, Math.min(100, ((r - 0.7) / 0.6) * 100))
+})
+
+const scenarioOptions = computed(() => [
+  { key: 'elevator', label: '加装电梯', changes: { elevator: true } },
+  { key: 'subway', label: '变为近地铁', changes: { subway: true } },
+  { key: 'age', label: '房龄减少 5 年', changes: { house_age: Math.max(0, Number(form.house_age || 0) - 5) } },
+  { key: 'area', label: '面积增加 10㎡', changes: { square: Math.min(500, Number(form.square || 10) + 10) } }
+])
+
+const scenarioRows = computed(() => {
+  if (!scenarioResult.value) return []
+  const baseline = scenarioResult.value.baseline || {}
+  return [
+    { ...baseline, name: '当前方案', delta_unit_price: 0, delta_total_price: 0, delta_pct: 0, isBaseline: true },
+    ...(scenarioResult.value.scenarios || [])
+  ]
 })
 
 const maxFactor = computed(() => {
@@ -152,6 +174,36 @@ function signedPrice(value) {
 
 function formatReason(row) {
   return (row.match_reasons || []).join(' · ')
+}
+async function runScenarios() {
+  const chosen = scenarioOptions.value.filter(item => scenarioSelection.value.includes(item.key))
+  if (!chosen.length) {
+    ElMessage.warning('请至少选择一个情景')
+    return
+  }
+  scenarioLoading.value = true
+  scenarioError.value = false
+  try {
+    scenarioResult.value = await runScenarioAnalysis({
+      base: { ...form },
+      scenarios: chosen.map(item => ({ name: item.label, changes: item.changes }))
+    })
+    ElMessage.success('情景对比完成')
+  } catch {
+    scenarioError.value = true
+  } finally {
+    scenarioLoading.value = false
+  }
+}
+
+function formatChanges(changes) {
+  const labels = { elevator: '电梯', subway: '地铁', house_age: '房龄', square: '面积' }
+  return Object.keys(changes || {}).map(key => labels[key] || key).join('、') || '-'
+}
+
+function signedDelta(value) {
+  const number = Number(value || 0)
+  return (number >= 0 ? '+' : '') + fmtNumber(Math.round(number))
 }
 </script>
 
@@ -364,7 +416,46 @@ function formatReason(row) {
         </el-table-column>
       </el-table>
     </section>
-  </div>
+    <section class="card mt-16 scenario-card" v-if="result">
+      <div class="section-head">
+        <div>
+          <h3 class="card-title">What-if 情景对比</h3>
+          <div class="muted">切换配套或房龄，观察模型输出变化；这里是敏感性分析，不是因果推断。</div>
+        </div>
+        <el-button type="primary" :loading="scenarioLoading" @click="runScenarios">运行对比</el-button>
+      </div>
+      <el-checkbox-group v-model="scenarioSelection" class="scenario-options">
+        <el-checkbox v-for="item in scenarioOptions" :key="item.key" :value="item.key">{{ item.label }}</el-checkbox>
+      </el-checkbox-group>
+      <el-alert v-if="scenarioError" type="warning" :closable="false" show-icon title="情景对比加载失败，请稍后重试" />
+      <el-table v-if="scenarioRows.length" :data="scenarioRows" stripe size="small" class="mt-16">
+        <el-table-column label="方案" min-width="150">
+          <template #default="{ row }">
+            {{ row.name }}
+            <el-tag v-if="row.isBaseline" size="small" type="info" effect="plain">基准</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="预测单价" width="140" align="right">
+          <template #default="{ row }">{{ fmtNumber(Math.round(row.predicted_unit_price)) }} 元/㎡</template>
+        </el-table-column>
+        <el-table-column label="预测总价" width="120" align="right">
+          <template #default="{ row }">{{ fmtNumber(row.predicted_total_price) }} 万</template>
+        </el-table-column>
+        <el-table-column label="总价变化" width="150" align="right">
+          <template #default="{ row }">
+            <span :class="Number(row.delta_total_price) >= 0 ? 'delta-up' : 'delta-down'">
+              {{ signedDelta(row.delta_total_price) }} 万
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="变化幅度" width="110" align="right">
+          <template #default="{ row }">{{ row.delta_pct == null ? '-' : Number(row.delta_pct).toFixed(2) + '%' }}</template>
+        </el-table-column>
+        <el-table-column label="改动" min-width="180">
+          <template #default="{ row }">{{ formatChanges(row.changes) }}</template>
+        </el-table-column>
+      </el-table>
+    </section>  </div>
 </template>
 
 <style scoped>
@@ -418,4 +509,8 @@ function formatReason(row) {
   .factor-value { grid-column: 2; text-align: left; }
   .section-head { flex-direction: column; }
 }
+.scenario-card { background: linear-gradient(150deg, #fff 0%, #f7fbff 100%); }
+.scenario-options { margin-top: 14px; display: flex; gap: 14px; flex-wrap: wrap; }
+.delta-up { color: #2f6fed; font-weight: 650; }
+.delta-down { color: #c84f5d; font-weight: 650; }
 </style>
